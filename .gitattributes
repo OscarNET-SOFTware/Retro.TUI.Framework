@@ -1,0 +1,65 @@
+# ── Default behaviour ─────────────────────────────────────────────
+# text=auto normalizes line endings to LF in the repository on commit.
+# On checkout, Git converts to the platform native ending:
+#   Windows  → CRLF
+#   Linux    → LF
+#   macOS    → LF
+# Do NOT set a global eol=crlf — that would force CRLF on all
+# platforms and break shell scripts and Unix tooling.
+* text=auto
+
+# ── Source code ───────────────────────────────────────────────────
+*.cs        text
+*.csx       text
+*.cake      text
+
+# ── Projects and solutions ────────────────────────────────────────
+*.sln       text
+*.slnx      text
+*.csproj    text
+*.props     text
+*.targets   text
+
+# ── Configuration ─────────────────────────────────────────────────
+*.json      text
+*.xml       text
+*.config    text
+*.yml       text
+*.yaml      text
+*.toml      text
+*.ini       text
+*.editorconfig text
+
+# ── Documentation ─────────────────────────────────────────────────
+*.md        text
+*.txt       text
+*.rst       text
+
+# ── Windows scripts — must always be CRLF on all platforms ───────
+*.bat       text eol=crlf
+*.cmd       text eol=crlf
+*.ps1       text eol=crlf
+*.psm1      text eol=crlf
+*.psd1      text eol=crlf
+
+# ── Shell scripts — must always be LF on all platforms ───────────
+*.sh        text eol=lf
+
+# ── Binary files — never modify ───────────────────────────────────
+*.png       binary
+*.jpg       binary
+*.jpeg      binary
+*.gif       binary
+*.ico       binary
+*.ttf       binary
+*.otf       binary
+*.woff      binary
+*.woff2     binary
+*.eot       binary
+*.pdf       binary
+*.zip       binary
+*.dll       binary
+*.exe       binary
+*.pdb       binary
+*.nupkg     binary
+*.snupkg    binary

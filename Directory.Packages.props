@@ -1,0 +1,43 @@
+<Project>
+
+  <PropertyGroup>
+    <!-- Central Package Management — all NuGet versions are defined here.    -->
+    <!-- Projects reference packages without specifying versions.              -->
+    <!-- See: https://learn.microsoft.com/nuget/consume-packages/central-package-management -->
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+  </PropertyGroup>
+
+  <PropertyGroup Label="Package versions">
+    <!-- All SkiaSharp.* packages must always share the same version.         -->
+    <!-- Changing this single property updates all native asset packages too. -->
+    <SkiaSharpVersion>3.119.2</SkiaSharpVersion>
+
+    <!-- All Silk.NET.* packages must always share the same version.          -->
+    <SilkNetVersion>2.23.0</SilkNetVersion>
+  </PropertyGroup>
+
+  <!-- SkiaSharp 3.x — cross-platform 2D rendering engine -->
+  <ItemGroup Label="SkiaSharp">
+    <PackageVersion Include="SkiaSharp"                       Version="$(SkiaSharpVersion)" />
+    <PackageVersion Include="SkiaSharp.NativeAssets.Linux"    Version="$(SkiaSharpVersion)" />
+    <PackageVersion Include="SkiaSharp.NativeAssets.macOS"    Version="$(SkiaSharpVersion)" />
+    <PackageVersion Include="SkiaSharp.NativeAssets.Win32"    Version="$(SkiaSharpVersion)" />
+  </ItemGroup>
+
+  <!-- Silk.NET 2.x — SDL2 window and input host -->
+  <ItemGroup Label="Silk.NET">
+    <PackageVersion Include="Silk.NET.SDL"                    Version="$(SilkNetVersion)" />
+    <PackageVersion Include="Silk.NET.Windowing.Sdl"          Version="$(SilkNetVersion)" />
+  </ItemGroup>
+
+  <!-- Testing — xUnit v3, coverlet, ... -->
+  <ItemGroup Label="Testing">
+    <PackageVersion Include="coverlet.collector"              Version="10.0.1" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk"          Version="18.5.1" />
+    <PackageVersion Include="ReportGenerator"                 Version="5.5.10" />
+    <PackageVersion Include="xunit.runner.visualstudio"       Version="3.1.5" />
+    <PackageVersion Include="xunit.v3"                        Version="3.2.2" />
+  </ItemGroup>
+
+</Project>

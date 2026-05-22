@@ -1,0 +1,96 @@
+# ── Visual Studio ─────────────────────────────────────────────────
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.userprefs
+
+# ── Visual Studio 2026 ────────────────────────────────────────────
+*.slnx.user
+
+# ── Build output ──────────────────────────────────────────────────
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+artifacts/
+out/
+publish/
+
+# ── NuGet ─────────────────────────────────────────────────────────
+*.nupkg
+*.snupkg
+.nuget/
+packages/
+!**/packages/build/
+project.lock.json
+project.fragment.lock.json
+artifacts.json
+
+# ── .NET generated files ──────────────────────────────────────────
+project.lock.json
+project.fragment.lock.json
+*.GeneratedMSBuildEditorConfig.editorconfig
+
+# ── Test results and coverage ─────────────────────────────────────
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+TestResult.xml
+coverage*.xml
+coverage*.json
+*.coverage
+*.coveragexml
+_ReSharper*/
+*.DotSettings.user
+
+# ── JetBrains Rider ───────────────────────────────────────────────
+.idea/
+*.sln.iml
+
+# ── Visual Studio Code ────────────────────────────────────────────
+.vscode/
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
+!.vscode/settings.json
+
+# ── Operating systems ─────────────────────────────────────────────
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Linux
+*~
+
+# ── Static analysis tools ─────────────────────────────────────────
+.sonarqube/
+.scannerwork/
+BenchmarkDotNet.Artifacts/
+
+# ── Secrets and local configuration ──────────────────────────────
+*.env
+*.env.local
+appsettings.local.json
+appsettings.*.local.json
+secrets.json
+
+# ── Temporary files ───────────────────────────────────────────────
+*.tmp
+*.temp
+*.bak
+*.swp
+*.orig

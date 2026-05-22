@@ -1,0 +1,37 @@
+<Project>
+
+  <!-- Import root Directory.Build.props -->
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))"
+          Condition="'' != $([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+
+  <PropertyGroup>
+    <!-- ── Build configurations ─────────────────────────────────── -->
+    <Configurations>Debug;Release</Configurations>
+    <DebugSymbols>true</DebugSymbols>
+    <Deterministic>true</Deterministic>
+
+    <!-- ── Packaging ────────────────────────────────────────────── -->
+    <IsPackable>true</IsPackable>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IncludeSource>false</IncludeSource>
+    <IncludeSymbols>false</IncludeSymbols>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/OscarNET-SOFTware/Retro.TUI.Framework</PackageProjectUrl>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+  </PropertyGroup>
+
+  <!-- ── Debug configuration ──────────────────────────────────────── -->
+  <PropertyGroup Condition="'$(Configuration)'=='Debug'">
+    <DebugType>portable</DebugType>
+    <DefineConstants>TRACE;DEBUG</DefineConstants>
+  </PropertyGroup>
+
+  <!-- ── Release configuration ────────────────────────────────────── -->
+  <PropertyGroup Condition="'$(Configuration)'=='Release'">
+    <DebugType>embedded</DebugType>
+    <DefineConstants>TRACE;RELEASE</DefineConstants>
+    <Optimize>true</Optimize>
+  </PropertyGroup>
+
+</Project>

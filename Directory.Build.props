@@ -1,0 +1,38 @@
+<Project>
+
+  <PropertyGroup>
+    <!-- ── Build ────────────────────────────────────────────────── -->
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <WarningLevel>9999</WarningLevel>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <AnalysisMode>All</AnalysisMode>
+
+    <!-- ── Output ───────────────────────────────────────────────── -->
+    <Deterministic>true</Deterministic>
+    <ProduceReferenceAssembly>true</ProduceReferenceAssembly>
+
+    <!-- ── NuGet package metadata ───────────────────────────────── -->
+    <Authors>Oscar Fernandez Gonzalez</Authors>
+    <Company>OscarNET-SOFTware</Company>
+    <Copyright>© 2026 Oscar Fernandez Gonzalez a.k.a. Osc@rNET</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageProjectUrl>https://github.com/OscarNET-SOFTware/Retro.TUI.Framework</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/OscarNET-SOFTware/Retro.TUI.Framework</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>tui;retro;skia;skiaSharp;sdl2;terminal;ui;framework;dotnet</PackageTags>
+    <PackageIcon>icon.png</PackageIcon>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+
+    <!-- ── XML documentation ────────────────────────────────────── -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+
+</Project>
