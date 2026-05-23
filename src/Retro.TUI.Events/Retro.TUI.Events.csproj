@@ -1,0 +1,11 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AssemblyTitle>Event hierarchy and command definitions for Retro.TUI.Framework. Defines the communication language between all framework components. No dependencies on other framework layers.</AssemblyTitle>
+    <Description>$(AssemblyTitle)</Description>
+    <PackageId>Retro.TUI.Events</PackageId>
+    <PackageTags>$(PackageTags);events;commands</PackageTags>
+    <Title>Retro TUI Events (part of Retro TUI Framework)</Title>
+  </PropertyGroup>
+
+</Project>

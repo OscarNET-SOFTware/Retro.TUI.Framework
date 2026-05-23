@@ -170,6 +170,14 @@ public sealed class TuiEventQueue : IDisposable
     /// <summary>Posts an event to the queue (non-blocking).</summary>
     public bool TryPost(TuiEvent evt);
 
+    /// <summary>Asynchronously posts an event to the queue, waiting if the queue is full.</summary>
+    /// <remarks>
+    /// Prefer <see cref="TryPost"/> from the SDL2 host's poll loop.
+    /// Use <see cref="PostAsync"/> from producers that can afford to await,
+    /// such as internal timer sources or test helpers.
+    /// </remarks>
+    public async ValueTask PostAsync(TuiEvent evt, CancellationToken ct = default);
+
     /// <summary>Reads the next event asynchronously.</summary>
     public ValueTask<TuiEvent> ReadAsync(CancellationToken ct = default);
 

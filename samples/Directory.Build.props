@@ -5,24 +5,26 @@
           Condition="'' != $([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))"/>
 
   <PropertyGroup>
-    <!-- ── Sample projects are executable, never packaged ───────── -->
-    <IsPackable>false</IsPackable>
-    <OutputType>Exe</OutputType>
-
-    <!-- ── No NuGet documentation needed for sample projects ────── -->
+    <!-- ── Build options ────────────────────────────────────────────────── -->
+    <Configurations>Debug;Release</Configurations>
+    <DebugSymbols>true</DebugSymbols>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
 
-    <!-- ── Debug symbols — always portable in sample projects ────── -->
-    <DebugSymbols>true</DebugSymbols>
+    <!-- ── Output options ───────────────────────────────────────────────── -->
+    <OutputType>exe</OutputType>
+
+    <!-- ── Packaging options ────────────────────────────────────────────── -->
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
   </PropertyGroup>
 
-  <!-- ── Debug configuration ──────────────────────────────────────── -->
+  <!-- ── Debug configuration ────────────────────────────────────────────── -->
   <PropertyGroup Condition="'$(Configuration)'=='Debug'">
     <DebugType>portable</DebugType>
     <DefineConstants>TRACE;DEBUG</DefineConstants>
   </PropertyGroup>
 
-  <!-- ── Release configuration ────────────────────────────────────── -->
+  <!-- ── Release configuration ──────────────────────────────────────────── -->
   <PropertyGroup Condition="'$(Configuration)'=='Release'">
     <DebugType>embedded</DebugType>
     <DefineConstants>TRACE;RELEASE</DefineConstants>

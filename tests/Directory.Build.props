@@ -5,20 +5,21 @@
           Condition="'' != $([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))"/>
 
   <PropertyGroup>
-    <!-- ── Test project flags ───────────────────────────────────── -->
-    <IsPackable>false</IsPackable>
-    <IsTestProject>true</IsTestProject>
-
-    <!-- ── Debug symbols — always portable in test projects ─────── -->
+    <!-- ── Build options ────────────────────────────────────────────────── -->
     <DebugSymbols>true</DebugSymbols>
     <DebugType>portable</DebugType>
     <DefineConstants>TRACE;DEBUG</DefineConstants>
-
-    <!-- ── No NuGet documentation needed for test projects ──────── -->
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
+
+    <!-- ── Error and warning options ────────────────────────────────────── -->
+    <NoWarn>$(NoWarn);IDE0008</NoWarn>
+
+    <!-- ── Packaging options ────────────────────────────────────────────── -->
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
   </PropertyGroup>
 
-  <!-- ── Testing packages — applied to every test project ──────────── -->
+  <!-- ── Testing packages — applied to every test project ───────────────── -->
   <ItemGroup>
     <PackageReference Include="coverlet.collector">
       <PrivateAssets>all</PrivateAssets>
@@ -33,7 +34,9 @@
     </PackageReference>
   </ItemGroup>
 
-  <!-- ── Global usings for all test files ──────────────────────────── -->
+  <!-- ── Global usings for all test files ───────────────────────────────── -->
+  <!-- System.* namespaces are already covered by ImplicitUsings.            -->
+  <!-- Only namespaces not included by default are listed here.              -->
   <ItemGroup>
     <Using Include="Xunit" />
   </ItemGroup>

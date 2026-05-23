@@ -1,6 +1,6 @@
 # Retro.TUI.Framework
 
-> Framework TUI multiplataforma para C# .NET 10 basado en SkiaSharp,  
+> Framework TUI multiplataforma para C-Sharp .NET basado en SkiaSharp,  
 > inspirado en Turbo Vision con estética retro de PC Tools 9.x.
 
 [![Licencia: MIT](https://img.shields.io/badge/Licencia-MIT-yellow.svg)](LICENSE.md)
@@ -252,7 +252,7 @@ Para obtener información técnica completa sobre cada capa, consulta:
 ### Milestone 1 — Cimientos (Hosting + Rendering + Theming + Events)
 `v0.1.0`
 
-- [ ] `Retro.TUI.Events`: jerarquía de registros, `TuiCommand`, `TuiKey`
+- [x] ✅ `Retro.TUI.Events`: jerarquía de registros, `TuiCommand`, `TuiKey`
 - [ ] `Retro.TUI.Theming`: `TuiColorRole`, `TuiPalette`, `TuiTheme`
 - [ ] `Retro.TUI.Theme.PcTools9`: paleta y fuente IBM VGA
 - [ ] `Retro.TUI.Hosting`: `ITuiHost`, `SdlHost`
@@ -328,7 +328,7 @@ Ver [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
 ## Licencia
 
 Este proyecto está licenciado bajo la [Licencia MIT](LICENSE.md).  
-© 2026 Oscar Fernandez Gonzalez a.k.a. Osc@rNET
+© 2026 Oscar Fernandez Gonzalez a.k.a. Osc@rNET y Colaboradores
 
 ## Marcas registradas y reconocimientos
 

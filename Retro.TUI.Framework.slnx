@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/samples/" />
+  <Folder Name="/src/">
+    <Project Path="src/Retro.TUI.Events/Retro.TUI.Events.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Retro.TUI.Events.Tests/Retro.TUI.Events.Tests.csproj" />
+  </Folder>
+</Solution>

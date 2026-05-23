@@ -1,6 +1,6 @@
 MIT License
 
-Copyright (c) 2026 Oscar Fernandez Gonzalez a.k.a. Osc@rNET
+Copyright (c) 2026 Oscar Fernandez Gonzalez a.k.a. Osc@rNET and Contributors
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

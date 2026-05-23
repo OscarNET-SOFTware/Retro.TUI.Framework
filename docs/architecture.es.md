@@ -170,6 +170,14 @@ public sealed class TuiEventQueue : IDisposable
     /// <summary>Publica un evento en la cola (no bloqueante).</summary>
     public bool TryPost(TuiEvent evt);
 
+    /// <summary>Envía un evento a la cola de forma asíncrona y espera si la cola está llena.</summary>
+    /// <remarks>
+    /// Prefiera <see cref="TryPost"/> del bucle de sondeo del host SDL2.
+    /// Utilice <see cref="PostAsync"/> de los productores que puedan permitirse esperar,
+    /// como las fuentes de temporizador internas o los ayudantes de prueba.
+    /// </remarks>
+    public async ValueTask PostAsync(TuiEvent evt, CancellationToken ct = default);
+
     /// <summary>Lee el siguiente evento de forma asíncrona.</summary>
     public ValueTask<TuiEvent> ReadAsync(CancellationToken ct = default);
 
