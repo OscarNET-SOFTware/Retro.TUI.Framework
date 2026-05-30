@@ -31,5 +31,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `docs/theming-reference.md` and `docs/theming-reference.es.md`: complete
   color role inventory and PC Tools 9.x palette reference.
 - `themes/Directory.Build.props`: shared MSBuild configuration for theme projects.
+- `Retro.TUI.Hosting`: new project implementing the hosting layer.
+  - `ITuiHost`: window host contract abstracting SDL2 from the rest of the framework.
+  - `TuiHostOptions`: immutable initialization options record with internal validation.
+  - `SdlHost`: `ITuiHost` implementation backed by SDL2 (Silk.NET) with a software
+    renderer (SDL streaming texture + SkiaSharp zero-copy surface).
+  - `SdlKeyMapper`: internal static SDL2 keycode and modifier mapper.
+  - Handles `SDL_WINDOWEVENT_RESIZED`: vetoes resize when `Resizable = false`
+    (restores original dimensions via `SDL_SetWindowSize`); rebuilds texture and
+    Skia surface and posts `TuiCommandEvent(Resize)` when `Resizable = true`.
+    Guards against spurious same-size events from Wayland compositors.
+- `TuiCommand.Resize = 8`: new system command posted by `SdlHost` on window resize.
+- `Retro.TUI.Hosting.Tests`: new test project.
+  - `TuiHostOptionsTests`: validation contract for `TuiHostOptions`.
+  - `ITuiHostContractTests`: `ITuiHost` lifecycle contract via `FakeTuiHost` stub.
+  - `SdlKeyMapperTests`: full coverage of `ToTuiKey` and `ToTuiModifiers`.
 
 [Unreleased]: https://github.com/OscarNET-SOFTware/Retro.TUI.Framework/compare/HEAD
