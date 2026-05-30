@@ -21,5 +21,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   under `src/`, `tests/` and `samples/`.
 - `scripts/run-test-projects-with-code-coverage.cmd`: runs all test projects
   and generates an HTML coverage report via ReportGenerator.
+- `Retro.TUI.Theming` project: `TuiColorRole` enum (75 semantic color roles),
+  `TuiPalette` (immutable role-to-`SKColor` map with `With` override support),
+  `TuiDesktopPattern` enum and `TuiTheme` aggregate (palette, font, shadow and
+  desktop pattern settings).
+- `Retro.TUI.Theme.PcTools9` project: `PcTools9Theme` static class with the
+  canonical Central Point Software PC Tools 9.x palette (8 colors, 75 roles).
+- `Retro.TUI.Theming.Tests`: 52 unit tests — 100 % line and branch coverage.
+- `docs/theming-reference.md` and `docs/theming-reference.es.md`: complete
+  color role inventory and PC Tools 9.x palette reference.
+- `themes/Directory.Build.props`: shared MSBuild configuration for theme projects.
 
 [Unreleased]: https://github.com/OscarNET-SOFTware/Retro.TUI.Framework/compare/HEAD

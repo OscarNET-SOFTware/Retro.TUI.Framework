@@ -253,8 +253,8 @@ Para obtener información técnica completa sobre cada capa, consulta:
 `v0.1.0`
 
 - [x] ✅ `Retro.TUI.Events`: jerarquía de registros, `TuiCommand`, `TuiKey`
-- [ ] `Retro.TUI.Theming`: `TuiColorRole`, `TuiPalette`, `TuiTheme`
-- [ ] `Retro.TUI.Theme.PcTools9`: paleta y fuente IBM VGA
+- [x] ✅ `Retro.TUI.Theming`: `TuiColorRole`, `TuiPalette`, `TuiTheme`
+- [x] ✅ `Retro.TUI.Theme.PcTools9`: paleta y fuente IBM VGA
 - [ ] `Retro.TUI.Hosting`: `ITuiHost`, `SdlHost`
 - [ ] `Retro.TUI.Rendering`: `TuiRenderContext`, `TuiGrid`, `TuiFont`
 

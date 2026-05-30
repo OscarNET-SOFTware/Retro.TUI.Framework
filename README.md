@@ -255,8 +255,8 @@ For the complete technical detail of each layer, see:
 `v0.1.0`
 
 - [x] ✅ `Retro.TUI.Events`: record hierarchy, `TuiCommand`, `TuiKey`
-- [ ] `Retro.TUI.Theming`: `TuiColorRole`, `TuiPalette`, `TuiTheme`
-- [ ] `Retro.TUI.Theme.PcTools9`: palette and IBM VGA font
+- [x] ✅ `Retro.TUI.Theming`: `TuiColorRole`, `TuiPalette`, `TuiTheme`
+- [x] ✅ `Retro.TUI.Theme.PcTools9`: palette and IBM VGA font
 - [ ] `Retro.TUI.Hosting`: `ITuiHost`, `SdlHost`
 - [ ] `Retro.TUI.Rendering`: `TuiRenderContext`, `TuiGrid`, `TuiFont`
 
