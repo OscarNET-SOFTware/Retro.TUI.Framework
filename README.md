@@ -257,7 +257,7 @@ For the complete technical detail of each layer, see:
 - [x] ✅ `Retro.TUI.Events`: record hierarchy, `TuiCommand`, `TuiKey`
 - [x] ✅ `Retro.TUI.Theming`: `TuiColorRole`, `TuiPalette`, `TuiTheme`
 - [x] ✅ `Retro.TUI.Theme.PcTools9`: palette and IBM VGA font
-- [ ] `Retro.TUI.Hosting`: `ITuiHost`, `SdlHost`
+- [x] ✅ `Retro.TUI.Hosting`: `ITuiHost`, `SdlHost`
 - [ ] `Retro.TUI.Rendering`: `TuiRenderContext`, `TuiGrid`, `TuiFont`
 
 ### Milestone 2 — View tree (Views + Core)

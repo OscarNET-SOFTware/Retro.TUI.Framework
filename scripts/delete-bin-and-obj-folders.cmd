@@ -14,6 +14,7 @@ set _RepoDir=%_ScriptsDir:scripts\=%
 set _SamplesDir=%_RepoDir%samples\
 set _SourceDir=%_RepoDir%src\
 set _TestsDir=%_RepoDir%tests\
+set _ThemesDir=%_RepoDir%themes\
 
 :DELETE_BIN_FOLDERS
 set _CurrentFolder=BIN
@@ -30,7 +31,7 @@ echo.
 echo DELETING THE FOLLOWING '%_CurrentFolder%' FOLDERS:
 echo.
 set _FolderExists=false
-for %%d in (%_SamplesDir%, %_SourceDir%, %_TestsDir%) do (
+for %%d in (%_SamplesDir%, %_SourceDir%, %_TestsDir%, %_ThemesDir%) do (
     for /f "tokens=*" %%a in ('dir %%d /s /b /o:n /ad ^| findstr /i "\\%_CurrentFolder%$"') do (
         set _FolderExists=true
         set _=%%a

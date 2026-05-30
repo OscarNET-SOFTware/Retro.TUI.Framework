@@ -54,6 +54,21 @@ public enum TuiCommand
     /// <summary>Answers "No" to a question dialog.</summary>
     No = 7,
 
+    /// <summary>
+    /// Notifies that the host window has been resized by the operating system
+    /// or window manager.
+    /// </summary>
+    /// <remarks>
+    /// Posted by <c>SdlHost</c> only when <c>TuiHostOptions.Resizable</c> is
+    /// <see langword="true"/>. When <c>Resizable</c> is <see langword="false"/> the host
+    /// vetoes the resize by restoring the original dimensions and no event is posted.
+    /// <para/>
+    /// The <c>Parameter</c> field of the accompanying <see cref="TuiCommandEvent"/>
+    /// carries a <c>(int Width, int Height)</c> value tuple with the new physical pixel
+    /// dimensions so that consumers can update their layout without querying the host.
+    /// </remarks>
+    Resize = 8,
+
     // ── Window commands (framework-reserved: 10–19) ───────────────────────
 
     /// <summary>Toggles the active window between its normal and maximised sizes.</summary>

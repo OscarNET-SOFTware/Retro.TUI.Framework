@@ -255,7 +255,7 @@ Para obtener información técnica completa sobre cada capa, consulta:
 - [x] ✅ `Retro.TUI.Events`: jerarquía de registros, `TuiCommand`, `TuiKey`
 - [x] ✅ `Retro.TUI.Theming`: `TuiColorRole`, `TuiPalette`, `TuiTheme`
 - [x] ✅ `Retro.TUI.Theme.PcTools9`: paleta y fuente IBM VGA
-- [ ] `Retro.TUI.Hosting`: `ITuiHost`, `SdlHost`
+- [x] ✅ `Retro.TUI.Hosting`: `ITuiHost`, `SdlHost`
 - [ ] `Retro.TUI.Rendering`: `TuiRenderContext`, `TuiGrid`, `TuiFont`
 
 ### Milestone 2 — Árbol de vistas (Views + Core)

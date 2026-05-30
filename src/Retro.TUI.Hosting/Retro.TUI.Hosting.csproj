@@ -1,0 +1,27 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AssemblyTitle>Hosting layer for Retro.TUI.Framework. Provides the SDL2-backed window host (SdlHost) and the ITuiHost abstraction. This is the only project in the framework that references SDL2 directly.</AssemblyTitle>
+    <Description>$(AssemblyTitle)</Description>
+    <PackageId>Retro.TUI.Hosting</PackageId>
+    <PackageTags>$(PackageTags);hosting;sdl2;window</PackageTags>
+    <Title>Retro TUI Hosting (part of Retro TUI Framework)</Title>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>Retro.TUI.Hosting.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Silk.NET.SDL" />
+    <PackageReference Include="SkiaSharp" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux" />
+    <PackageReference Include="SkiaSharp.NativeAssets.macOS" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Win32" />
+    <ProjectReference Include="..\Retro.TUI.Events\Retro.TUI.Events.csproj" />
+  </ItemGroup>
+
+</Project>
