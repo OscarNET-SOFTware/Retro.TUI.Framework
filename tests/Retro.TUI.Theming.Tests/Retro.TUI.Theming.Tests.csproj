@@ -1,0 +1,12 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Retro.TUI.Theming</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Retro.TUI.Theming\Retro.TUI.Theming.csproj" />
+    <ProjectReference Include="..\..\themes\Retro.TUI.Theme.PcTools9\Retro.TUI.Theme.PcTools9.csproj" />
+  </ItemGroup>
+
+</Project>

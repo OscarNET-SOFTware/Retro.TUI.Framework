@@ -281,6 +281,10 @@ public enum TuiColorRole
 }
 ```
 
+> For the complete inventory of roles with their reference to Turbo Vision
+> and the PcTools9 theme value palette, see
+> [`docs/theming-reference.md`](theming-reference.md).
+
 ### 2.2 TuiPalette
 
 ```csharp
@@ -369,7 +373,8 @@ public static class PcTools9Theme
 {
     /// <summary>
     /// PC Tools 9.x theme instance by Central Point Software.
-    /// EGA 16-color palette, IBM VGA CP437 font 9×16 px.
+    /// EGA 16-color palette, IBM VGA CP437 font 9×16 px
+    /// that also includes extended Unicode versions.
     /// </summary>
     public static TuiTheme Instance { get; } = Build();
 

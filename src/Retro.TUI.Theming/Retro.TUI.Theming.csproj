@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AssemblyTitle>Theming system for Retro.TUI.Framework. Defines the semantic color role model (TuiColorRole), the immutable palette (TuiPalette) and the theme aggregate (TuiTheme). No dependencies on other framework layers beyond SkiaSharp.</AssemblyTitle>
+    <Description>$(AssemblyTitle)</Description>
+    <PackageId>Retro.TUI.Theming</PackageId>
+    <PackageTags>$(PackageTags);theming;palette;colors</PackageTags>
+    <Title>Retro TUI Theming (part of Retro TUI Framework)</Title>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SkiaSharp" />
+  </ItemGroup>
+
+</Project>

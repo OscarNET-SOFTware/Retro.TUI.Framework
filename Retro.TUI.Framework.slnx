@@ -2,8 +2,13 @@
   <Folder Name="/samples/" />
   <Folder Name="/src/">
     <Project Path="src/Retro.TUI.Events/Retro.TUI.Events.csproj" />
+    <Project Path="src/Retro.TUI.Theming/Retro.TUI.Theming.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Retro.TUI.Events.Tests/Retro.TUI.Events.Tests.csproj" />
+    <Project Path="tests/Retro.TUI.Theming.Tests/Retro.TUI.Theming.Tests.csproj" />
+  </Folder>
+  <Folder Name="/themes/">
+    <Project Path="themes/Retro.TUI.Theme.PcTools9/Retro.TUI.Theme.PcTools9.csproj" />
   </Folder>
 </Solution>
