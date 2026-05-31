@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AssemblyTitle>Rendering layer for Retro.TUI.Framework. Wraps SkiaSharp and exposes a grid-oriented drawing API (TuiRenderContext, TuiGrid, TuiFont). No view or control accesses SkiaSharp directly: they always go through TuiRenderContext.</AssemblyTitle>
+    <Description>$(AssemblyTitle)</Description>
+    <PackageId>Retro.TUI.Rendering</PackageId>
+    <PackageTags>$(PackageTags);rendering;skia;skiasharp;grid</PackageTags>
+    <Title>Retro TUI Rendering (part of Retro TUI Framework)</Title>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>Retro.TUI.Rendering.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SkiaSharp" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux" />
+    <PackageReference Include="SkiaSharp.NativeAssets.macOS" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Win32" />
+    <ProjectReference Include="..\Retro.TUI.Theming\Retro.TUI.Theming.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -46,5 +46,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `TuiHostOptionsTests`: validation contract for `TuiHostOptions`.
   - `ITuiHostContractTests`: `ITuiHost` lifecycle contract via `FakeTuiHost` stub.
   - `SdlKeyMapperTests`: full coverage of `ToTuiKey` and `ToTuiModifiers`.
+- `Retro.TUI.Rendering`: new project with the grid-oriented rendering layer.
+  No view or control accesses SkiaSharp directly; all drawing goes through
+  `TuiRenderContext`.
+  - `TuiGrid`: character grid metrics derived from the active font and window
+    dimensions. Provides cell↔pixel coordinate conversion utilities.
+  - `TuiFont`: wraps a theme-supplied `SKTypeface` and exposes a configured
+    `SKFont` with alias edging for sharp pixel-art rendering.
+  - `TuiRenderContext`: main drawing API for views and controls. Implements
+    `IDisposable`. `BeginFrame`/`EndFrame` are `internal`; the public surface
+    exposes only grid-coordinate drawing primitives.
+  - `DrawBorder`: geometric primitive — 2 px left edge + 2 px bottom edge,
+    per PC Tools 9.x visual reference. No character box-drawing glyphs.
+- `Retro.TUI.Rendering.Tests`: contract tests (no SDL2/GPU required) and
+  font integration tests against `PcTools9Theme`.
+- `Retro.TUI.Framework.slnx`: updated with `Retro.TUI.Rendering` and
+  `Retro.TUI.Rendering.Tests`.
+
+### Changed
+
+- `PcTools9Theme`: registers the IBM VGA 9x16 typeface (`PxPlus IBM VGA 9x16`)
+  via a static field initializer using `SKTypeface.FromStream`. Replaces the
+  previous `SKFontManager.RegisterTypeface` call removed in SkiaSharp 3.x.
+
+### Removed
+
+- `DrawBorderDouble`: not present in PC Tools 9.x visual reference.
+  History preserved in Git.
 
 [Unreleased]: https://github.com/OscarNET-SOFTware/Retro.TUI.Framework/compare/HEAD
