@@ -107,6 +107,52 @@ public sealed class TuiRenderContext : IDisposable
         _canvas = null;
     }
 
+    // ── Frame execution ──────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Acquires the canvas from <paramref name="surface"/>, executes
+    /// <paramref name="drawCallback"/> inside a matched
+    /// <see cref="BeginFrame"/> / <see cref="EndFrame"/> pair, then flushes.
+    /// </summary>
+    /// <param name="surface">
+    /// The <see cref="SkiaSharp.SKSurface"/> provided by the host for the current frame.
+    /// Must not be <see langword="null"/>.
+    /// </param>
+    /// <param name="drawCallback">
+    /// The delegate that draws the entire view tree onto this context.
+    /// Must not be <see langword="null"/>.
+    /// </param>
+    /// <remarks>
+    /// This method is the <em>only</em> intended caller of the <c>internal</c>
+    /// <see cref="BeginFrame"/> and <see cref="EndFrame"/> methods.
+    /// <c>Retro.TUI.Core</c> calls it from <c>TuiMessageLoop</c>, which keeps
+    /// <c>BeginFrame</c> and <c>EndFrame</c> invisible outside this assembly while
+    /// still allowing the message loop to control the render cycle.
+    /// <para/>
+    /// The <c>try/finally</c> guarantees that <see cref="EndFrame"/> is always
+    /// called even when <paramref name="drawCallback"/> throws, preventing the
+    /// canvas from being left in an active-frame state on the next iteration.
+    /// </remarks>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="surface"/> or <paramref name="drawCallback"/>
+    /// is <see langword="null"/>.
+    /// </exception>
+    public void RenderFrame(SkiaSharp.SKSurface surface, Action<TuiRenderContext> drawCallback)
+    {
+        ArgumentNullException.ThrowIfNull(surface);
+        ArgumentNullException.ThrowIfNull(drawCallback);
+
+        BeginFrame(surface.Canvas);
+        try
+        {
+            drawCallback(this);
+        }
+        finally
+        {
+            EndFrame();
+        }
+    }
+
     // ── Background ────────────────────────────────────────────────────────────
 
     /// <summary>
