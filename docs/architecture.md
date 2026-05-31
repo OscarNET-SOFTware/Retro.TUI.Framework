@@ -550,7 +550,7 @@ public sealed class TuiFont : IDisposable
     public SKFont        SkFont  { get; private set; } = null!;
     public SKFontMetrics Metrics { get; private set; }
 
-    public void Load(string resourceName, float size);
+    public void Load(SKTypeface typeface, float size);
     public void Dispose();
 }
 ```
@@ -568,6 +568,7 @@ passes it to the view tree for drawing, then finalizes it.
 public sealed class TuiRenderContext
 {
     public TuiGrid  Grid  { get; }
+    public TuiFont  Font  { get; }
     public TuiTheme Theme { get; }
 
     // ── Background ───────────────────────────────────────────────
@@ -591,10 +592,7 @@ public sealed class TuiRenderContext
     // ── Borders ──────────────────────────────────────────────────
 
     public void DrawBorder(int col, int row, int width, int height,
-        TuiColorRole border, TuiColorRole bg);
-
-    public void DrawBorderDouble(int col, int row, int width, int height,
-        TuiColorRole border, TuiColorRole bg);
+        TuiColorRole border);
 
     // ── Shadow ───────────────────────────────────────────────────
 

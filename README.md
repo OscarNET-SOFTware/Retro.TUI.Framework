@@ -258,7 +258,7 @@ For the complete technical detail of each layer, see:
 - [x] ✅ `Retro.TUI.Theming`: `TuiColorRole`, `TuiPalette`, `TuiTheme`
 - [x] ✅ `Retro.TUI.Theme.PcTools9`: palette and IBM VGA font
 - [x] ✅ `Retro.TUI.Hosting`: `ITuiHost`, `SdlHost`
-- [ ] `Retro.TUI.Rendering`: `TuiRenderContext`, `TuiGrid`, `TuiFont`
+- [x] ✅ `Retro.TUI.Rendering`: `TuiRenderContext`, `TuiGrid`, `TuiFont`
 
 ### Milestone 2 — View tree (Views + Core)
 `v0.2.0`

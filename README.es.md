@@ -256,7 +256,7 @@ Para obtener información técnica completa sobre cada capa, consulta:
 - [x] ✅ `Retro.TUI.Theming`: `TuiColorRole`, `TuiPalette`, `TuiTheme`
 - [x] ✅ `Retro.TUI.Theme.PcTools9`: paleta y fuente IBM VGA
 - [x] ✅ `Retro.TUI.Hosting`: `ITuiHost`, `SdlHost`
-- [ ] `Retro.TUI.Rendering`: `TuiRenderContext`, `TuiGrid`, `TuiFont`
+- [x] ✅ `Retro.TUI.Rendering`: `TuiRenderContext`, `TuiGrid`, `TuiFont`
 
 ### Milestone 2 — Árbol de vistas (Views + Core)
 `v0.2.0`

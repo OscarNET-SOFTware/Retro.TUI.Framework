@@ -12,4 +12,15 @@
     <ProjectReference Include="..\..\src\Retro.TUI.Theming\Retro.TUI.Theming.csproj" />
   </ItemGroup>
 
+  <!--
+    IBM VGA 9x16 font — PxPlus variant by VileR (int10h.org).
+    Licensed under CC BY-SA 4.0. See licenses/cc-by-sa-4.0.txt.
+    The file must be placed at the path shown below before building.
+  -->
+  <ItemGroup>
+    <EmbeddedResource Include="Fonts\PxPlus_IBM_VGA_9x16.ttf">
+      <LogicalName>Retro.TUI.Theme.PcTools9.Fonts.PxPlus_IBM_VGA_9x16.ttf</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+
 </Project>

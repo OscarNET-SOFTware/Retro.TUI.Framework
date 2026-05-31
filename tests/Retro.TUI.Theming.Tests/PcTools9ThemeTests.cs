@@ -145,7 +145,7 @@ public sealed class PcTools9ThemeTests
     [Fact]
     public void Instance_FontFamily_IsIbmVga9x16()
     {
-        Assert.Equal("IBM VGA 9x16", PcTools9Theme.Instance.FontFamily);
+        Assert.Equal("PxPlus IBM VGA 9x16", PcTools9Theme.Instance.FontFamily);
     }
 
     [Fact]

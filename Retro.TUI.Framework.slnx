@@ -3,11 +3,13 @@
   <Folder Name="/src/">
     <Project Path="src/Retro.TUI.Events/Retro.TUI.Events.csproj" />
     <Project Path="src/Retro.TUI.Hosting/Retro.TUI.Hosting.csproj" />
+    <Project Path="src/Retro.TUI.Rendering/Retro.TUI.Rendering.csproj" />
     <Project Path="src/Retro.TUI.Theming/Retro.TUI.Theming.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Retro.TUI.Events.Tests/Retro.TUI.Events.Tests.csproj" />
     <Project Path="tests/Retro.TUI.Hosting.Tests/Retro.TUI.Hosting.Tests.csproj" />
+    <Project Path="tests/Retro.TUI.Rendering.Tests/Retro.TUI.Rendering.Tests.csproj" />
     <Project Path="tests/Retro.TUI.Theming.Tests/Retro.TUI.Theming.Tests.csproj" />
   </Folder>
   <Folder Name="/themes/">
