@@ -316,4 +316,12 @@ public enum TuiColorRole
 
     /// <summary>Background of the scroll bar arrow button areas.</summary>
     ScrollBarArrowBackground,
+
+    // ── Mouse cursor ─────────────────────────────────────────────────────
+
+    /// <summary>Fill color of the custom mouse cursor pointer bitmap.</summary>
+    MouseCursorFill,
+
+    /// <summary>Outline color of the custom mouse cursor pointer bitmap.</summary>
+    MouseCursorOutline,
 }

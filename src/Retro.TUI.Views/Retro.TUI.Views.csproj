@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AssemblyTitle>View-tree layer for Retro.TUI.Framework. Provides TuiView, TuiGroup and TuiDesktop — the composable visual hierarchy that all controls and windows build on. Depends on Events, Theming and Rendering; does not reference SkiaSharp directly.</AssemblyTitle>
+    <Description>$(AssemblyTitle)</Description>
+    <PackageId>Retro.TUI.Views</PackageId>
+    <PackageTags>$(PackageTags);views;viewtree;desktop</PackageTags>
+    <Title>Retro TUI Views (part of Retro TUI Framework)</Title>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>Retro.TUI.Views.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Retro.TUI.Events\Retro.TUI.Events.csproj" />
+    <ProjectReference Include="..\Retro.TUI.Theming\Retro.TUI.Theming.csproj" />
+    <ProjectReference Include="..\Retro.TUI.Rendering\Retro.TUI.Rendering.csproj" />
+  </ItemGroup>
+
+</Project>

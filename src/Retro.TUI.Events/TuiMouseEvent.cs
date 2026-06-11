@@ -31,13 +31,35 @@ namespace Retro.TUI.Events;
 /// The mouse button involved in this event, or <see cref="TuiMouseButton.None"/>
 /// for <see cref="TuiMouseAction.Move"/> and <see cref="TuiMouseAction.Wheel"/> events.
 /// </param>
+/// <param name="PixelX">
+/// Horizontal position of the cursor in screen pixels at the time of the event.
+/// Pixel 0 is the leftmost column of the window.
+/// </param>
+/// <param name="PixelY">
+/// Vertical position of the cursor in screen pixels at the time of the event.
+/// Pixel 0 is the topmost row of the window.
+/// </param>
 /// <remarks>
-/// Coordinates are expressed in character-grid units (columns / rows), not pixels.
-/// The rendering layer is responsible for the pixel-to-cell mapping.
+/// <b>Coordinate contract:</b> the host (<c>SdlHost</c>) posts this event with
+/// <see cref="Col"/> and <see cref="Row"/> set to <c>0</c> and <see cref="PixelX"/> /
+/// <see cref="PixelY"/> set to the real screen-pixel position reported by SDL2.
+/// <c>0</c> is used as an explicit "not yet computed" placeholder rather than a
+/// plausible-looking pixel value, to avoid the appearance of a valid grid coordinate.
+/// <para/>
+/// <c>Retro.TUI.Core.TuiMessageLoop</c> recomputes <see cref="Col"/> and
+/// <see cref="Row"/> from <see cref="PixelX"/> / <see cref="PixelY"/> using
+/// <c>TuiGrid.CellCol</c> / <c>TuiGrid.CellRow</c> before dispatching the event to
+/// the view tree. Code that consumes <see cref="Col"/> / <see cref="Row"/> from an
+/// event inside <c>HandleEvent</c> always sees the recomputed, correct grid
+/// coordinates — only code observing the raw event between <c>SdlHost</c> posting it
+/// and <c>TuiMessageLoop</c> recomputing it (e.g. host-level tests) sees the
+/// placeholder <c>0</c>.
 /// </remarks>
 public sealed record TuiMouseEvent(
     TuiMouseAction Action,
     int Col,
     int Row,
-    TuiMouseButton Button
+    TuiMouseButton Button,
+    float PixelX = 0f,
+    float PixelY = 0f
 ) : TuiEvent;

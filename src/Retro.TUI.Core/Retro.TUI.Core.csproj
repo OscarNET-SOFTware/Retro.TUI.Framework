@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AssemblyTitle>Application core for Retro.TUI.Framework. Provides TuiApplication (entry point), TuiMessageLoop (poll-update-render cycle) and TuiFocusManager (keyboard focus). This is the only layer that wires together Hosting, Rendering and the view tree.</AssemblyTitle>
+    <Description>$(AssemblyTitle)</Description>
+    <PackageId>Retro.TUI.Core</PackageId>
+    <PackageTags>$(PackageTags);core;application;loop;focus</PackageTags>
+    <Title>Retro TUI Core (part of Retro TUI Framework)</Title>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>Retro.TUI.Core.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Retro.TUI.Hosting\Retro.TUI.Hosting.csproj" />
+    <ProjectReference Include="..\Retro.TUI.Rendering\Retro.TUI.Rendering.csproj" />
+    <ProjectReference Include="..\Retro.TUI.Views\Retro.TUI.Views.csproj" />
+  </ItemGroup>
+
+</Project>

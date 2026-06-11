@@ -44,6 +44,19 @@ public sealed class TuiRenderContext : IDisposable
     private readonly SKPaint _fillPaint = new() { IsAntialias = false };
     private readonly SKPaint _textPaint = new() { IsAntialias = false };
 
+    /// <summary>
+    /// Lazily-built bitmap for <see cref="DrawMouseCursor"/>, rendered once using
+    /// the <see cref="TuiColorRole.MouseCursorFill"/> and
+    /// <see cref="TuiColorRole.MouseCursorOutline"/> colors resolved at first draw.
+    /// </summary>
+    /// <remarks>
+    /// TODO: <c>_cursorBitmap</c> is cached with colors resolved at first draw.
+    /// If <c>CurrentTheme</c> changes at runtime, the cursor will retain stale
+    /// colors until this <see cref="TuiRenderContext"/> is recreated. Revisit if
+    /// hot theme-switching becomes a supported scenario.
+    /// </remarks>
+    private SKBitmap? _cursorBitmap;
+
     // ── Construction ──────────────────────────────────────────────────────────
 
     /// <summary>
@@ -105,6 +118,52 @@ public sealed class TuiRenderContext : IDisposable
         RequireCanvas();
         _canvas!.Flush();
         _canvas = null;
+    }
+
+    // ── Frame execution ──────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Acquires the canvas from <paramref name="surface"/>, executes
+    /// <paramref name="drawCallback"/> inside a matched
+    /// <see cref="BeginFrame"/> / <see cref="EndFrame"/> pair, then flushes.
+    /// </summary>
+    /// <param name="surface">
+    /// The <see cref="SkiaSharp.SKSurface"/> provided by the host for the current frame.
+    /// Must not be <see langword="null"/>.
+    /// </param>
+    /// <param name="drawCallback">
+    /// The delegate that draws the entire view tree onto this context.
+    /// Must not be <see langword="null"/>.
+    /// </param>
+    /// <remarks>
+    /// This method is the <em>only</em> intended caller of the <c>internal</c>
+    /// <see cref="BeginFrame"/> and <see cref="EndFrame"/> methods.
+    /// <c>Retro.TUI.Core</c> calls it from <c>TuiMessageLoop</c>, which keeps
+    /// <c>BeginFrame</c> and <c>EndFrame</c> invisible outside this assembly while
+    /// still allowing the message loop to control the render cycle.
+    /// <para/>
+    /// The <c>try/finally</c> guarantees that <see cref="EndFrame"/> is always
+    /// called even when <paramref name="drawCallback"/> throws, preventing the
+    /// canvas from being left in an active-frame state on the next iteration.
+    /// </remarks>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="surface"/> or <paramref name="drawCallback"/>
+    /// is <see langword="null"/>.
+    /// </exception>
+    public void RenderFrame(SkiaSharp.SKSurface surface, Action<TuiRenderContext> drawCallback)
+    {
+        ArgumentNullException.ThrowIfNull(surface);
+        ArgumentNullException.ThrowIfNull(drawCallback);
+
+        BeginFrame(surface.Canvas);
+        try
+        {
+            drawCallback(this);
+        }
+        finally
+        {
+            EndFrame();
+        }
     }
 
     // ── Background ────────────────────────────────────────────────────────────
@@ -422,6 +481,96 @@ public sealed class TuiRenderContext : IDisposable
         _canvas!.DrawRect(pixelX, pixelY, Grid.CellWidth, Grid.CellHeight, _fillPaint);
     }
 
+    /// <summary>
+    /// Draws the custom mouse pointer at the given screen-pixel position.
+    /// </summary>
+    /// <param name="pixelX">X position of the pointer hot-spot, in physical pixels.</param>
+    /// <param name="pixelY">Y position of the pointer hot-spot, in physical pixels.</param>
+    /// <remarks>
+    /// Renders a 12×19 pixel-art arrow bitmap, replacing the host's system cursor
+    /// (hidden via <c>TuiHostOptions.HideSystemCursor</c>). The bitmap is built once
+    /// on first use and cached for subsequent frames — see
+    /// <see cref="BuildCursorBitmap"/>.
+    /// <para/>
+    /// Unlike <see cref="DrawCursor"/> (a one-cell text caret), this method draws in
+    /// screen-pixel coordinates and does not snap to the character grid: the pointer
+    /// follows the mouse smoothly, matching the PC Tools 9.x visual reference.
+    /// <para/>
+    /// The caller is responsible for drawing this <em>last</em>, after the entire
+    /// view tree, so the pointer always renders on top.
+    /// </remarks>
+    public void DrawMouseCursor(float pixelX, float pixelY)
+    {
+        RequireCanvas();
+
+        SKBitmap bitmap = _cursorBitmap ??= BuildCursorBitmap();
+
+        _canvas!.DrawBitmap(bitmap, pixelX, pixelY);
+    }
+
+    /// <summary>
+    /// Builds the 12×19 pixel-art mouse pointer bitmap using the active theme's
+    /// <see cref="TuiColorRole.MouseCursorFill"/> and
+    /// <see cref="TuiColorRole.MouseCursorOutline"/> colors.
+    /// </summary>
+    /// <remarks>
+    /// Pixel values: <c>0</c> = transparent, <c>1</c> = fill, <c>2</c> = outline.
+    /// Called once and cached in <see cref="_cursorBitmap"/>.
+    /// </remarks>
+    private SKBitmap BuildCursorBitmap()
+    {
+        // 0 = transparent, 1 = fill, 2 = outline.
+        ReadOnlySpan<byte> pixels =
+        [
+            2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            2, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            2, 1, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0,
+            2, 1, 1, 1, 2, 0, 0, 0, 0, 0, 0, 0,
+            2, 1, 1, 1, 1, 2, 0, 0, 0, 0, 0, 0,
+            2, 1, 1, 1, 1, 1, 2, 0, 0, 0, 0, 0,
+            2, 1, 1, 1, 1, 1, 1, 2, 0, 0, 0, 0,
+            2, 1, 1, 1, 1, 1, 1, 1, 2, 0, 0, 0,
+            2, 1, 1, 1, 1, 1, 1, 1, 1, 2, 0, 0,
+            2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 0,
+            2, 1, 1, 1, 1, 1, 1, 2, 2, 1, 1, 2,
+            2, 1, 1, 2, 2, 1, 1, 2, 0, 2, 2, 2,
+            2, 1, 1, 2, 2, 1, 1, 2, 0, 0, 0, 0,
+            2, 1, 2, 0, 2, 1, 1, 1, 2, 0, 0, 0,
+            2, 2, 2, 0, 0, 2, 1, 1, 2, 0, 0, 0,
+            0, 0, 0, 0, 0, 2, 1, 1, 1, 2, 0, 0,
+            0, 0, 0, 0, 0, 0, 2, 1, 1, 2, 0, 0,
+            0, 0, 0, 0, 0, 0, 2, 1, 1, 2, 0, 0,
+            0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 0, 0,
+        ];
+
+        const int width = 12;
+        const int height = 19;
+
+        SKColor fill = ResolveColor(TuiColorRole.MouseCursorFill);
+        SKColor outline = ResolveColor(TuiColorRole.MouseCursorOutline);
+        SKColor transparent = SKColors.Transparent;
+
+        var bitmap = new SKBitmap(width, height, SKColorType.Rgba8888, SKAlphaType.Premul);
+
+        for (int y = 0; y < height; y++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                byte value = pixels[y * width + x];
+                SKColor color = value switch
+                {
+                    1 => fill,
+                    2 => outline,
+                    _ => transparent,
+                };
+
+                bitmap.SetPixel(x, y, color);
+            }
+        }
+
+        return bitmap;
+    }
+
     // ── Private helpers ───────────────────────────────────────────────────────
 
     /// <summary>Throws <see cref="InvalidOperationException"/> if no frame is active.</summary>
@@ -512,5 +661,6 @@ public sealed class TuiRenderContext : IDisposable
     {
         _fillPaint.Dispose();
         _textPaint.Dispose();
+        _cursorBitmap?.Dispose();
     }
 }

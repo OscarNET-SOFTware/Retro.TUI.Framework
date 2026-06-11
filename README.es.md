@@ -261,11 +261,11 @@ Para obtener información técnica completa sobre cada capa, consulta:
 ### Milestone 2 — Árbol de vistas (Views + Core)
 `v0.2.0`
 
-- [ ] `Retro.TUI.Views`: `TuiView`, `TuiGroup`, `TuiDesktop`
-- [ ] `Retro.TUI.Core`: `TuiApplication`, `TuiMessageLoop`, `TuiFocusManager`
-- [ ] Fondo de escritorio con patrón de puntos
-- [ ] Envío de eventos de teclado y ratón al árbol
-- [ ] Cursor de ratón personalizado
+- [x] ✅ `Retro.TUI.Views`: `TuiView`, `TuiGroup`, `TuiDesktop`
+- [x] ✅ `Retro.TUI.Core`: `TuiApplication`, `TuiMessageLoop`, `TuiFocusManager`
+- [x] ✅ Fondo de escritorio con patrón de puntos
+- [x] ✅ Envío de eventos de teclado y ratón al árbol
+- [x] ✅ Cursor de ratón personalizado
 
 ### Milestone 3 — Ventanas
 `v0.3.0`

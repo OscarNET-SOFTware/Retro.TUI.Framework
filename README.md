@@ -263,11 +263,11 @@ For the complete technical detail of each layer, see:
 ### Milestone 2 — View tree (Views + Core)
 `v0.2.0`
 
-- [ ] `Retro.TUI.Views`: `TuiView`, `TuiGroup`, `TuiDesktop`
-- [ ] `Retro.TUI.Core`: `TuiApplication`, `TuiMessageLoop`, `TuiFocusManager`
-- [ ] Desktop background with dot pattern
-- [ ] Keyboard and mouse event dispatch to the tree
-- [ ] Custom mouse cursor
+- [x] ✅ `Retro.TUI.Views`: `TuiView`, `TuiGroup`, `TuiDesktop`
+- [x] ✅ `Retro.TUI.Core`: `TuiApplication`, `TuiMessageLoop`, `TuiFocusManager`
+- [x] ✅ Desktop background with dot pattern
+- [x] ✅ Keyboard and mouse event dispatch to the tree
+- [x] ✅ Custom mouse cursor
 
 ### Milestone 3 — Windows
 `v0.3.0`

@@ -103,8 +103,8 @@ public sealed class SdlHost : ITuiHost
     // ── Double-click tracking ─────────────────────────────────────────────
 
     private uint _lastClickTimestamp;
-    private int _lastClickCol;
-    private int _lastClickRow;
+    private float _lastClickPixelX;
+    private float _lastClickPixelY;
 
     // ── Construction ──────────────────────────────────────────────────────
 
@@ -562,66 +562,79 @@ public sealed class SdlHost : ITuiHost
 
     private static void HandleMouseMotion(MouseMotionEvent mev, TuiEventQueue queue)
     {
+        // Col/Row are placeholders (0); TuiMessageLoop recomputes them from
+        // PixelX/PixelY using the active TuiGrid before dispatch.
         queue.TryPost(new TuiMouseEvent(
             TuiMouseAction.Move,
-            mev.X,
-            mev.Y,
-            TuiMouseButton.None));
+            Col: 0,
+            Row: 0,
+            TuiMouseButton.None,
+            PixelX: mev.X,
+            PixelY: mev.Y));
     }
 
     private static void HandleMouseButtonDown(MouseButtonEvent mev, TuiEventQueue queue)
     {
         TuiMouseButton button = MapMouseButton(mev.Button);
 
+        // Col/Row are placeholders (0); TuiMessageLoop recomputes them from
+        // PixelX/PixelY using the active TuiGrid before dispatch.
         queue.TryPost(new TuiMouseEvent(
             TuiMouseAction.ButtonDown,
-            mev.X,
-            mev.Y,
-            button));
+            Col: 0,
+            Row: 0,
+            button,
+            PixelX: mev.X,
+            PixelY: mev.Y));
     }
 
     private void HandleMouseButtonUp(MouseButtonEvent mev, TuiEventQueue queue)
     {
         TuiMouseButton button = MapMouseButton(mev.Button);
-        int x = mev.X;
-        int y = mev.Y;
+        float pixelX = mev.X;
+        float pixelY = mev.Y;
+
+        // Col/Row are placeholders (0); TuiMessageLoop recomputes them from
+        // PixelX/PixelY using the active TuiGrid before dispatch.
 
         // Always post ButtonUp.
-        queue.TryPost(new TuiMouseEvent(TuiMouseAction.ButtonUp, x, y, button));
+        queue.TryPost(new TuiMouseEvent(TuiMouseAction.ButtonUp, 0, 0, button, pixelX, pixelY));
 
         // Synthesise Click.
-        queue.TryPost(new TuiMouseEvent(TuiMouseAction.Click, x, y, button));
+        queue.TryPost(new TuiMouseEvent(TuiMouseAction.Click, 0, 0, button, pixelX, pixelY));
 
-        // Detect double-click: same button, same cell, within threshold.
+        // Detect double-click: same button, same pixel position, within threshold.
         uint now = mev.Timestamp;
 
         if (button == TuiMouseButton.Left
             && now - _lastClickTimestamp <= DoubleClickThresholdMs
-            && x == _lastClickCol
-            && y == _lastClickRow)
+            && pixelX == _lastClickPixelX
+            && pixelY == _lastClickPixelY)
         {
-            queue.TryPost(new TuiMouseEvent(TuiMouseAction.DoubleClick, x, y, button));
+            queue.TryPost(new TuiMouseEvent(TuiMouseAction.DoubleClick, 0, 0, button, pixelX, pixelY));
             // Reset so a third click does not immediately double-click again.
             _lastClickTimestamp = 0;
         }
         else
         {
             _lastClickTimestamp = now;
-            _lastClickCol = x;
-            _lastClickRow = y;
+            _lastClickPixelX = pixelX;
+            _lastClickPixelY = pixelY;
         }
     }
 
     private static void HandleMouseWheel(MouseWheelEvent mev, TuiEventQueue queue)
     {
         // SDL reports wheel deltas; for now map any wheel activity to a single
-        // Wheel event. The rendering layer will translate pixel coordinates to
-        // character cells; the raw pixel position is preserved here.
+        // Wheel event. Col/Row are placeholders (0); TuiMessageLoop recomputes
+        // them from PixelX/PixelY using the active TuiGrid before dispatch.
         queue.TryPost(new TuiMouseEvent(
             TuiMouseAction.Wheel,
-            mev.MouseX,
-            mev.MouseY,
-            TuiMouseButton.None));
+            Col: 0,
+            Row: 0,
+            TuiMouseButton.None,
+            PixelX: mev.MouseX,
+            PixelY: mev.MouseY));
     }
 
     // ── Private — helpers ─────────────────────────────────────────────────

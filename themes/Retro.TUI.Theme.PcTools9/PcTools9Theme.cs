@@ -251,6 +251,10 @@ public static class PcTools9Theme
             [TuiColorRole.ScrollBarThumb] = PcToolsGray,
             [TuiColorRole.ScrollBarArrow] = Black,
             [TuiColorRole.ScrollBarArrowBackground] = PcToolsLightGray,
+
+            // ── Mouse cursor ──────────────────────────────────────────────
+            [TuiColorRole.MouseCursorFill] = White,
+            [TuiColorRole.MouseCursorOutline] = Black,
         });
 
         return new TuiTheme

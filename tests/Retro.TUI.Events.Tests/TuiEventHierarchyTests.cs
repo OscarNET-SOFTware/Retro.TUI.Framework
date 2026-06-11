@@ -71,6 +71,58 @@ public sealed class TuiEventHierarchyTests
         Assert.NotEqual(a, b);
     }
 
+    [Fact]
+    public void TuiMouseEvent_PixelCoordinates_DefaultToZero()
+    {
+        var ev = new TuiMouseEvent(TuiMouseAction.Move, 0, 0, TuiMouseButton.None);
+
+        Assert.Equal(0f, ev.PixelX);
+        Assert.Equal(0f, ev.PixelY);
+    }
+
+    [Fact]
+    public void TuiMouseEvent_PixelCoordinates_CanBeSetIndependentlyOfCellCoordinates()
+    {
+        // Col/Row are placeholders (0) until TuiMessageLoop recomputes them;
+        // PixelX/PixelY carry the real screen-pixel position from the host.
+        var ev = new TuiMouseEvent(
+            TuiMouseAction.Move,
+            Col: 0,
+            Row: 0,
+            TuiMouseButton.None,
+            PixelX: 123.5f,
+            PixelY: 47.0f);
+
+        Assert.Equal(0, ev.Col);
+        Assert.Equal(0, ev.Row);
+        Assert.Equal(123.5f, ev.PixelX);
+        Assert.Equal(47.0f, ev.PixelY);
+    }
+
+    [Fact]
+    public void TuiMouseEvent_StructuralEquality_NotEqualWhenDifferentPixelPosition()
+    {
+        var a = new TuiMouseEvent(TuiMouseAction.Move, 0, 0, TuiMouseButton.None, PixelX: 10f, PixelY: 10f);
+        var b = new TuiMouseEvent(TuiMouseAction.Move, 0, 0, TuiMouseButton.None, PixelX: 20f, PixelY: 10f);
+
+        Assert.NotEqual(a, b);
+    }
+
+    [Fact]
+    public void TuiMouseEvent_WithExpression_CanRecomputeCellCoordinates()
+    {
+        // Simulates what TuiMessageLoop does: take the raw event and produce
+        // a new instance with Col/Row recomputed from PixelX/PixelY.
+        var raw = new TuiMouseEvent(TuiMouseAction.Move, 0, 0, TuiMouseButton.None, PixelX: 95f, PixelY: 33f);
+
+        var recomputed = raw with { Col = 10, Row = 2 };
+
+        Assert.Equal(10, recomputed.Col);
+        Assert.Equal(2, recomputed.Row);
+        Assert.Equal(95f, recomputed.PixelX);
+        Assert.Equal(33f, recomputed.PixelY);
+    }
+
     // ── TuiCommandEvent ───────────────────────────────────────────────────
 
     [Fact]

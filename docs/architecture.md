@@ -785,9 +785,9 @@ public abstract class TuiView
 
     // ── Tree management ───────────────────────────────────────────
 
-    public    void Add(TuiView child);
-    public    void Remove(TuiView child);
-    protected void Clear();
+    public    void AddChild(TuiView child);
+    public    void RemoveChild(TuiView child);
+    protected void ClearDirty();
 
     // ── Invalidation ─────────────────────────────────────────────
 
