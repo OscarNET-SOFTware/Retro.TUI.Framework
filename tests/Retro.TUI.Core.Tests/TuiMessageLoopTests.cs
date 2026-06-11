@@ -17,23 +17,25 @@ using Retro.TUI.Events;
 using Retro.TUI.Rendering;
 using Retro.TUI.Views;
 
+using SkiaSharp;
+
 namespace Retro.TUI.Core;
 
 /// <summary>
 /// Tests for the event-dispatch logic inside <see cref="TuiMessageLoop"/>:
 /// Tab/Shift+Tab focus navigation, Escape → Cancel command, keyboard routing
-/// to the focused view, and mouse hit-test dispatch.
+/// to the focused view, mouse hit-test dispatch, pixel→cell coordinate
+/// recomputation, and mouse-cursor pixel tracking.
 /// </summary>
 /// <remarks>
-/// <see cref="TuiMessageLoop"/> is <c>internal sealed</c> and its <c>Run</c> method
-/// requires a live <see cref="Retro.TUI.Hosting.ITuiHost"/> for the render loop.
-/// These tests exercise only the dispatch logic by accessing the private static
-/// helper methods through <c>InternalsVisibleTo</c>. The full render loop is covered
-/// by integration tests in a later milestone.
-/// <para/>
-/// Each test uses a pre-loaded <see cref="TuiEventQueue"/>, calls the internal
-/// <c>DispatchEvents</c> method reflectively, and asserts the side-effects on
-/// views and the focus manager.
+/// <see cref="TuiMessageLoop"/> is <c>internal sealed</c> and an instance class:
+/// it tracks the current mouse-pointer pixel position across iterations for the
+/// custom mouse cursor. Its <c>Run</c> method requires a live
+/// <see cref="Retro.TUI.Hosting.ITuiHost"/> for the render loop and is not exercised
+/// directly here. These tests instantiate <see cref="TuiMessageLoop"/> and call its
+/// <c>internal</c> <c>DispatchEvents</c> method, visible via
+/// <c>InternalsVisibleTo</c>. The full render loop is covered by integration tests
+/// in a later milestone.
 /// </remarks>
 public sealed class TuiMessageLoopTests
 {
@@ -56,23 +58,32 @@ public sealed class TuiMessageLoopTests
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
-    /// <summary>
-    /// Thin wrapper so test methods read as first-class calls rather than
-    /// direct static references. <c>DispatchEvents</c> is <c>internal static</c>
-    /// on <see cref="TuiMessageLoop"/>, visible here via <c>InternalsVisibleTo</c>.
-    /// </summary>
-    private static void DispatchEvents(
-        TuiEventQueue queue,
-        TuiDesktop desktop,
-        TuiFocusManager focusManager)
-        => TuiMessageLoop.DispatchEvents(queue, desktop, focusManager);
-
     private static TuiEventQueue QueueWith(params TuiEvent[] events)
     {
         var queue = new TuiEventQueue();
         foreach (TuiEvent ev in events)
             queue.TryPost(ev);
         return queue;
+    }
+
+    /// <summary>
+    /// Builds an initialized <see cref="TuiGrid"/> for a screen of
+    /// <paramref name="cols"/>×<paramref name="rows"/> nominal cells.
+    /// </summary>
+    /// <remarks>
+    /// Tests derive expected pixel positions from <see cref="TuiGrid.PixelX"/> /
+    /// <see cref="TuiGrid.PixelY"/> and expected cell positions from
+    /// <see cref="TuiGrid.CellCol"/> / <see cref="TuiGrid.CellRow"/> on this same
+    /// grid instance, so the actual <c>CellWidth</c>/<c>CellHeight</c> measured
+    /// from <see cref="SKTypeface.Default"/> do not need to match any specific
+    /// nominal size for the assertions to hold.
+    /// </remarks>
+    private static TuiGrid BuildGrid(int cols, int rows)
+    {
+        using var font = new SKFont(SKTypeface.Default, 16f);
+        var grid = new TuiGrid();
+        grid.Initialize(cols * 9, rows * 16, font);
+        return grid;
     }
 
     // ── Tab / Shift+Tab ───────────────────────────────────────────────────────
@@ -88,9 +99,11 @@ public sealed class TuiMessageLoopTests
         fm.SetFocus(viewA);
 
         var desktop = new TuiDesktop();
+        var grid = BuildGrid(80, 25);
+        var loop = new TuiMessageLoop();
         using var queue = QueueWith(new TuiKeyEvent(TuiKey.Tab, '\0', TuiModifiers.None));
 
-        DispatchEvents(queue, desktop, fm);
+        loop.DispatchEvents(queue, desktop, fm, grid);
 
         Assert.Same(viewB, fm.Current);
     }
@@ -106,10 +119,12 @@ public sealed class TuiMessageLoopTests
         fm.SetFocus(viewB);
 
         var desktop = new TuiDesktop();
+        var grid = BuildGrid(80, 25);
+        var loop = new TuiMessageLoop();
         using var queue = QueueWith(
             new TuiKeyEvent(TuiKey.Tab, '\0', TuiModifiers.Shift));
 
-        DispatchEvents(queue, desktop, fm);
+        loop.DispatchEvents(queue, desktop, fm, grid);
 
         Assert.Same(viewA, fm.Current);
     }
@@ -123,9 +138,11 @@ public sealed class TuiMessageLoopTests
         fm.SetFocus(view);
 
         var desktop = new TuiDesktop();
+        var grid = BuildGrid(80, 25);
+        var loop = new TuiMessageLoop();
         using var queue = QueueWith(new TuiKeyEvent(TuiKey.Tab, '\0', TuiModifiers.None));
 
-        DispatchEvents(queue, desktop, fm);
+        loop.DispatchEvents(queue, desktop, fm, grid);
 
         // The Tab key must be consumed by the focus manager, never by the view.
         Assert.Empty(view.ReceivedEvents);
@@ -138,13 +155,15 @@ public sealed class TuiMessageLoopTests
     {
         var fm = new TuiFocusManager();
         var desktop = new TuiDesktop();
+        var grid = BuildGrid(80, 25);
+        var loop = new TuiMessageLoop();
         var handler = new RecordingView { Width = 80, Height = 25 };
         desktop.Add(handler);
 
         using var queue = QueueWith(
             new TuiKeyEvent(TuiKey.Escape, '\0', TuiModifiers.None));
 
-        DispatchEvents(queue, desktop, fm);
+        loop.DispatchEvents(queue, desktop, fm, grid);
 
         Assert.Single(handler.ReceivedEvents);
         var cmdEvent = Assert.IsType<TuiCommandEvent>(handler.ReceivedEvents[0]);
@@ -162,10 +181,12 @@ public sealed class TuiMessageLoopTests
         fm.SetFocus(view);
 
         var desktop = new TuiDesktop();
+        var grid = BuildGrid(80, 25);
+        var loop = new TuiMessageLoop();
         var keyEvent = new TuiKeyEvent(TuiKey.Enter, '\0', TuiModifiers.None);
         using var queue = QueueWith(keyEvent);
 
-        DispatchEvents(queue, desktop, fm);
+        loop.DispatchEvents(queue, desktop, fm, grid);
 
         Assert.Single(view.ReceivedEvents);
         Assert.Same(keyEvent, view.ReceivedEvents[0]);
@@ -176,11 +197,13 @@ public sealed class TuiMessageLoopTests
     {
         var fm = new TuiFocusManager();  // no view focused
         var desktop = new TuiDesktop();
+        var grid = BuildGrid(80, 25);
+        var loop = new TuiMessageLoop();
         using var queue = QueueWith(
             new TuiKeyEvent(TuiKey.Enter, '\0', TuiModifiers.None));
 
         // Must not throw.
-        var ex = Record.Exception(() => DispatchEvents(queue, desktop, fm));
+        var ex = Record.Exception(() => loop.DispatchEvents(queue, desktop, fm, grid));
 
         Assert.Null(ex);
     }
@@ -192,17 +215,27 @@ public sealed class TuiMessageLoopTests
     {
         var fm = new TuiFocusManager();
         var desktop = new TuiDesktop { Col = 0, Row = 0, Width = 80, Height = 25 };
+        var grid = BuildGrid(80, 25);
+        var loop = new TuiMessageLoop();
         var target = new RecordingView { Col = 10, Row = 5, Width = 20, Height = 10 };
         desktop.Add(target);
 
-        var mouseEvent = new TuiMouseEvent(TuiMouseAction.ButtonDown, Col: 15, Row: 8,
-                                           TuiMouseButton.Left);
+        // Pixel position inside the target's cell range (col 15, row 8).
+        float pixelX = grid.PixelX(15) + 1f;
+        float pixelY = grid.PixelY(8) + 1f;
+
+        var mouseEvent = new TuiMouseEvent(TuiMouseAction.ButtonDown, Col: 0, Row: 0,
+                                           TuiMouseButton.Left, PixelX: pixelX, PixelY: pixelY);
         using var queue = QueueWith(mouseEvent);
 
-        DispatchEvents(queue, desktop, fm);
+        loop.DispatchEvents(queue, desktop, fm, grid);
 
         Assert.Single(target.ReceivedEvents);
-        Assert.Same(mouseEvent, target.ReceivedEvents[0]);
+        var received = Assert.IsType<TuiMouseEvent>(target.ReceivedEvents[0]);
+        Assert.Equal(15, received.Col);
+        Assert.Equal(8, received.Row);
+        Assert.Equal(pixelX, received.PixelX);
+        Assert.Equal(pixelY, received.PixelY);
     }
 
     [Fact]
@@ -210,13 +243,18 @@ public sealed class TuiMessageLoopTests
     {
         var fm = new TuiFocusManager();
         var desktop = new TuiDesktop { Col = 0, Row = 0, Width = 80, Height = 25 };
+        var grid = BuildGrid(80, 25);
+        var loop = new TuiMessageLoop();
         // No children — click hits nothing.
 
-        using var queue = QueueWith(
-            new TuiMouseEvent(TuiMouseAction.ButtonDown, Col: 5, Row: 5,
-                              TuiMouseButton.Left));
+        float pixelX = grid.PixelX(5);
+        float pixelY = grid.PixelY(5);
 
-        var ex = Record.Exception(() => DispatchEvents(queue, desktop, fm));
+        using var queue = QueueWith(
+            new TuiMouseEvent(TuiMouseAction.ButtonDown, Col: 0, Row: 0,
+                              TuiMouseButton.Left, PixelX: pixelX, PixelY: pixelY));
+
+        var ex = Record.Exception(() => loop.DispatchEvents(queue, desktop, fm, grid));
 
         Assert.Null(ex);
     }
@@ -226,6 +264,8 @@ public sealed class TuiMessageLoopTests
     {
         var fm = new TuiFocusManager();
         var desktop = new TuiDesktop { Col = 0, Row = 0, Width = 80, Height = 25 };
+        var grid = BuildGrid(80, 25);
+        var loop = new TuiMessageLoop();
         var hidden = new RecordingView
         {
             Col = 0,
@@ -236,12 +276,143 @@ public sealed class TuiMessageLoopTests
         };
         desktop.Add(hidden);
 
-        using var queue = QueueWith(
-            new TuiMouseEvent(TuiMouseAction.ButtonDown, Col: 5, Row: 5,
-                              TuiMouseButton.Left));
+        float pixelX = grid.PixelX(5);
+        float pixelY = grid.PixelY(5);
 
-        DispatchEvents(queue, desktop, fm);
+        using var queue = QueueWith(
+            new TuiMouseEvent(TuiMouseAction.ButtonDown, Col: 0, Row: 0,
+                              TuiMouseButton.Left, PixelX: pixelX, PixelY: pixelY));
+
+        loop.DispatchEvents(queue, desktop, fm, grid);
 
         Assert.Empty(hidden.ReceivedEvents);
+    }
+
+    // ── Pixel → cell coordinate recomputation ───────────────────────────────────
+
+    [Fact]
+    public void DispatchEvents_MouseEvent_RecomputesColRowFromPixels()
+    {
+        // Even though the raw event carries Col=0, Row=0 (host placeholders),
+        // the dispatched event must carry the recomputed grid coordinates.
+        var fm = new TuiFocusManager();
+        var desktop = new TuiDesktop { Col = 0, Row = 0, Width = 80, Height = 25 };
+        var grid = BuildGrid(80, 25);
+        var loop = new TuiMessageLoop();
+        var target = new RecordingView { Col = 0, Row = 0, Width = 80, Height = 25 };
+        desktop.Add(target);
+
+        float pixelX = grid.PixelX(7) + 2f;
+        float pixelY = grid.PixelY(3) + 2f;
+
+        using var queue = QueueWith(
+            new TuiMouseEvent(TuiMouseAction.Move, Col: 0, Row: 0,
+                              TuiMouseButton.None, PixelX: pixelX, PixelY: pixelY));
+
+        loop.DispatchEvents(queue, desktop, fm, grid);
+
+        var received = Assert.IsType<TuiMouseEvent>(Assert.Single(target.ReceivedEvents));
+        Assert.Equal(grid.CellCol(pixelX), received.Col);
+        Assert.Equal(grid.CellRow(pixelY), received.Row);
+    }
+
+    [Fact]
+    public void DispatchEvents_MouseEvent_PreservesPixelCoordinates()
+    {
+        var fm = new TuiFocusManager();
+        var desktop = new TuiDesktop { Col = 0, Row = 0, Width = 80, Height = 25 };
+        var grid = BuildGrid(80, 25);
+        var loop = new TuiMessageLoop();
+        var target = new RecordingView { Col = 0, Row = 0, Width = 80, Height = 25 };
+        desktop.Add(target);
+
+        const float pixelX = 42.5f;
+        const float pixelY = 17.25f;
+
+        using var queue = QueueWith(
+            new TuiMouseEvent(TuiMouseAction.Move, Col: 0, Row: 0,
+                              TuiMouseButton.None, PixelX: pixelX, PixelY: pixelY));
+
+        loop.DispatchEvents(queue, desktop, fm, grid);
+
+        var received = Assert.IsType<TuiMouseEvent>(Assert.Single(target.ReceivedEvents));
+        Assert.Equal(pixelX, received.PixelX);
+        Assert.Equal(pixelY, received.PixelY);
+    }
+
+    // ── TuiGroup skipped during bubble-up ───────────────────────────────────────
+
+    [Fact]
+    public void DispatchEvents_MouseClick_SkipsPureTuiGroupDuringBubbleUp()
+    {
+        // A plain TuiGroup wrapping a RecordingView: the event must reach the
+        // RecordingView exactly once (not twice via the group's HandleEvent).
+        var fm = new TuiFocusManager();
+        var desktop = new TuiDesktop { Col = 0, Row = 0, Width = 80, Height = 25 };
+        var grid = BuildGrid(80, 25);
+        var loop = new TuiMessageLoop();
+
+        var group = new TuiGroup { Col = 0, Row = 0, Width = 80, Height = 25 };
+        var target = new RecordingView { Col = 0, Row = 0, Width = 80, Height = 25 };
+        group.Add(target);
+        desktop.Add(group);
+
+        float pixelX = grid.PixelX(1);
+        float pixelY = grid.PixelY(1);
+
+        using var queue = QueueWith(
+            new TuiMouseEvent(TuiMouseAction.ButtonDown, Col: 0, Row: 0,
+                              TuiMouseButton.Left, PixelX: pixelX, PixelY: pixelY));
+
+        loop.DispatchEvents(queue, desktop, fm, grid);
+
+        Assert.Single(target.ReceivedEvents);
+    }
+
+    // ── Mouse cursor pixel tracking ──────────────────────────────────────────────
+
+    [Fact]
+    public void DispatchEvents_MouseMove_UpdatesCursorPixelPosition()
+    {
+        var fm = new TuiFocusManager();
+        var desktop = new TuiDesktop { Col = 0, Row = 0, Width = 80, Height = 25 };
+        var grid = BuildGrid(80, 25);
+        var loop = new TuiMessageLoop();
+
+        const float pixelX = 100f;
+        const float pixelY = 50f;
+
+        using var queue = QueueWith(
+            new TuiMouseEvent(TuiMouseAction.Move, Col: 0, Row: 0,
+                              TuiMouseButton.None, PixelX: pixelX, PixelY: pixelY));
+
+        loop.DispatchEvents(queue, desktop, fm, grid);
+
+        Assert.Equal(pixelX, loop.CursorPixelX);
+        Assert.Equal(pixelY, loop.CursorPixelY);
+    }
+
+    [Fact]
+    public void DispatchEvents_MouseMove_OutsideAllViews_StillUpdatesCursorPosition()
+    {
+        // The cursor must track the pointer even when no view is hit —
+        // the cursor is drawn regardless of hit-testing outcome.
+        var fm = new TuiFocusManager();
+        var desktop = new TuiDesktop { Col = 0, Row = 0, Width = 80, Height = 25 };
+        var grid = BuildGrid(80, 25);
+        var loop = new TuiMessageLoop();
+        // No children — move hits nothing.
+
+        const float pixelX = 200f;
+        const float pixelY = 75f;
+
+        using var queue = QueueWith(
+            new TuiMouseEvent(TuiMouseAction.Move, Col: 0, Row: 0,
+                              TuiMouseButton.None, PixelX: pixelX, PixelY: pixelY));
+
+        loop.DispatchEvents(queue, desktop, fm, grid);
+
+        Assert.Equal(pixelX, loop.CursorPixelX);
+        Assert.Equal(pixelY, loop.CursorPixelY);
     }
 }

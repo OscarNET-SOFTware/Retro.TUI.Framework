@@ -164,7 +164,8 @@ public abstract class TuiApplication : IDisposable
         // ── 6. Run the message loop ───────────────────────────────────────────
         using var queue = new TuiEventQueue();
 
-        TuiMessageLoop.Run(
+        var loop = new TuiMessageLoop();
+        loop.Run(
             host: ownedHost,
             queue: queue,
             desktop: Desktop,

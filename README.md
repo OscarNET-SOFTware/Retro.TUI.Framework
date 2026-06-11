@@ -267,7 +267,7 @@ For the complete technical detail of each layer, see:
 - [x] ✅ `Retro.TUI.Core`: `TuiApplication`, `TuiMessageLoop`, `TuiFocusManager`
 - [x] ✅ Desktop background with dot pattern
 - [x] ✅ Keyboard and mouse event dispatch to the tree
-- [ ] Custom mouse cursor
+- [x] ✅ Custom mouse cursor
 
 ### Milestone 3 — Windows
 `v0.3.0`

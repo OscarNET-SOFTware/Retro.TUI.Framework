@@ -401,6 +401,57 @@ public sealed class TuiRenderContextTests
     public void DrawCursor_ValidPosition_DoesNotThrow()
         => AssertDrawDoesNotThrow(ctx => ctx.DrawCursor(0f, 0f));
 
+    // ── Mouse cursor ─────────────────────────────────────────────────────
+
+    [Fact]
+    public void DrawMouseCursor_ValidPosition_DoesNotThrow()
+        => AssertDrawDoesNotThrow(ctx => ctx.DrawMouseCursor(0f, 0f));
+
+    [Fact]
+    public void DrawMouseCursor_NonZeroPosition_DoesNotThrow()
+        => AssertDrawDoesNotThrow(ctx => ctx.DrawMouseCursor(123.5f, 47.0f));
+
+    [Fact]
+    public void DrawMouseCursor_CalledTwice_ReusesCachedBitmap()
+    {
+        // Calling twice exercises the lazy-init branch (first call) and the
+        // cached-bitmap branch (second call) without throwing either time.
+        using var surface = CreateSurface(800, 480);
+        var ctx = BuildContext(80, 25);
+
+        ctx.BeginFrame(surface.Canvas);
+        var ex1 = Record.Exception(() => ctx.DrawMouseCursor(0f, 0f));
+        var ex2 = Record.Exception(() => ctx.DrawMouseCursor(10f, 10f));
+        ctx.EndFrame();
+
+        Assert.Null(ex1);
+        Assert.Null(ex2);
+    }
+
+    [Fact]
+    public void DrawMouseCursor_BeforeBeginFrame_ThrowsInvalidOperationException()
+    {
+        var ctx = BuildContext(80, 25);
+
+        Assert.Throws<InvalidOperationException>(() => ctx.DrawMouseCursor(0f, 0f));
+    }
+
+    [Fact]
+    public void Dispose_AfterDrawMouseCursor_DoesNotThrow()
+    {
+        // Ensures the cached _cursorBitmap is disposed cleanly.
+        using var surface = CreateSurface(800, 480);
+        var ctx = BuildContext(80, 25);
+
+        ctx.BeginFrame(surface.Canvas);
+        ctx.DrawMouseCursor(0f, 0f);
+        ctx.EndFrame();
+
+        var ex = Record.Exception(ctx.Dispose);
+
+        Assert.Null(ex);
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────
 
     /// <summary>

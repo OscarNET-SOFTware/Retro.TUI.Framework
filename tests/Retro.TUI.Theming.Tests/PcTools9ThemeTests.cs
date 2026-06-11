@@ -100,6 +100,8 @@ public sealed class PcTools9ThemeTests
     [InlineData(TuiColorRole.ScrollBarActiveBackground, 0xFF, 0xFF, 0xFF)] // White
     [InlineData(TuiColorRole.ScrollBarThumb, 0x69, 0x69, 0x69)] // PcToolsGray
     [InlineData(TuiColorRole.ScrollBarArrow, 0x00, 0x00, 0x00)] // Black
+    [InlineData(TuiColorRole.MouseCursorFill, 0xFF, 0xFF, 0xFF)] // White
+    [InlineData(TuiColorRole.MouseCursorOutline, 0x00, 0x00, 0x00)] // Black
     public void Palette_KeyRole_HasExpectedColor(TuiColorRole role, byte r, byte g, byte b)
     {
         SKColor expected = new(r, g, b);

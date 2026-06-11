@@ -265,7 +265,7 @@ Para obtener información técnica completa sobre cada capa, consulta:
 - [x] ✅ `Retro.TUI.Core`: `TuiApplication`, `TuiMessageLoop`, `TuiFocusManager`
 - [x] ✅ Fondo de escritorio con patrón de puntos
 - [x] ✅ Envío de eventos de teclado y ratón al árbol
-- [ ] Cursor de ratón personalizado
+- [x] ✅ Cursor de ratón personalizado
 
 ### Milestone 3 — Ventanas
 `v0.3.0`
