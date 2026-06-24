@@ -66,6 +66,32 @@ public class TuiGroup : TuiView
     /// </exception>
     public bool Remove(TuiView child) => RemoveChild(child);
 
+    /// <summary>
+    /// Returns whether <paramref name="child"/> is the frontmost (last-painted,
+    /// last-dispatched) direct child of this group.
+    /// </summary>
+    /// <param name="child">The view to test. Must not be <see langword="null"/>.</param>
+    /// <returns>
+    /// <see langword="true"/> if <paramref name="child"/> is the last entry in
+    /// <see cref="TuiView.Children"/>; <see langword="false"/> otherwise, including
+    /// when <paramref name="child"/> is not a direct child of this group or this
+    /// group has no children.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="child"/> is <see langword="null"/>.
+    /// </exception>
+    /// <remarks>
+    /// Used by <c>TuiWindow</c> (in <c>Retro.TUI.Windows</c>) to determine whether
+    /// it is the active (topmost) window on the desktop, since z-order is encoded
+    /// purely by position in the children list.
+    /// </remarks>
+    public bool IsFrontmost(TuiView child)
+    {
+        ArgumentNullException.ThrowIfNull(child);
+
+        return Children.Count > 0 && ReferenceEquals(Children[^1], child);
+    }
+
     // ── Hit-testing ───────────────────────────────────────────────────────────
 
     /// <summary>

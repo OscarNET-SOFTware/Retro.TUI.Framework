@@ -11,8 +11,8 @@
     <!-- ── Versioning ───────────────────────────────────────────────────── -->
     <!-- VersionSuffix is cleared on stable releases.                        -->
     <!-- Result: $(VersionPrefix)-$(VersionSuffix) → 0.1.0-alpha.1           -->
-    <VersionPrefix>0.2.0</VersionPrefix>
-    <VersionSuffix>alpha.2</VersionSuffix>
+    <VersionPrefix>0.3.0</VersionPrefix>
+    <VersionSuffix>alpha.3</VersionSuffix>
 
     <!-- ── Build options ────────────────────────────────────────────────── -->
     <ImplicitUsings>enable</ImplicitUsings>

@@ -270,7 +270,7 @@ Para obtener información técnica completa sobre cada capa, consulta:
 ### Milestone 3 — Ventanas
 `v0.3.0`
 
-- [ ] `TuiWindow` con título, borde y sombra
+- [x] ✅ `TuiWindow` con título, borde y sombra
 - [ ] `TuiDialog` con pila modal
 - [ ] Arrastrar la ventana con el ratón
 - [ ] Z-order (traer al frente al hacer clic)

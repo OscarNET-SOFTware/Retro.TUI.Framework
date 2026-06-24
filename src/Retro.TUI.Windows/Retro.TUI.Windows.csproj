@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AssemblyTitle>Windows layer for Retro.TUI.Framework. Provides TuiWindow and TuiDialog — movable, closable top-level containers with title bar, border, shadow and modal support. Depends only on Retro.TUI.Views; not referenced by Retro.TUI.Core.</AssemblyTitle>
+    <Description>$(AssemblyTitle)</Description>
+    <PackageId>Retro.TUI.Windows</PackageId>
+    <PackageTags>$(PackageTags);windows;dialog;modal</PackageTags>
+    <Title>Retro TUI Windows (part of Retro TUI Framework)</Title>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>Retro.TUI.Windows.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Retro.TUI.Views\Retro.TUI.Views.csproj" />
+  </ItemGroup>
+
+</Project>

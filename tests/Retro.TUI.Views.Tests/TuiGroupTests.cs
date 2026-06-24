@@ -111,6 +111,59 @@ public sealed class TuiGroupTests
         Assert.Throws<ArgumentNullException>(() => group.Remove(null!));
     }
 
+    // ── IsFrontmost ────────────────────────────────────────────────────────────
+
+    [Fact]
+    public void IsFrontmost_NullChild_ThrowsArgumentNullException()
+    {
+        var group = new TuiGroup();
+
+        Assert.Throws<ArgumentNullException>(() => group.IsFrontmost(null!));
+    }
+
+    [Fact]
+    public void IsFrontmost_EmptyGroup_ReturnsFalse()
+    {
+        var group = new TuiGroup();
+        var view = new StubView();
+
+        Assert.False(group.IsFrontmost(view));
+    }
+
+    [Fact]
+    public void IsFrontmost_OnlyChild_ReturnsTrue()
+    {
+        var group = new TuiGroup();
+        var child = new StubView();
+        group.Add(child);
+
+        Assert.True(group.IsFrontmost(child));
+    }
+
+    [Fact]
+    public void IsFrontmost_LastAddedChild_ReturnsTrue()
+    {
+        var group = new TuiGroup();
+        var first = new StubView();
+        var last = new StubView();
+        group.Add(first);
+        group.Add(last);
+
+        Assert.True(group.IsFrontmost(last));
+        Assert.False(group.IsFrontmost(first));
+    }
+
+    [Fact]
+    public void IsFrontmost_ViewNotInGroup_ReturnsFalse()
+    {
+        var group = new TuiGroup();
+        var member = new StubView();
+        var outsider = new StubView();
+        group.Add(member);
+
+        Assert.False(group.IsFrontmost(outsider));
+    }
+
     // ── FindAt — hit-testing ──────────────────────────────────────────────────
 
     [Fact]

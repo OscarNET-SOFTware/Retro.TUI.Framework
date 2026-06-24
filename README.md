@@ -272,7 +272,7 @@ For the complete technical detail of each layer, see:
 ### Milestone 3 — Windows
 `v0.3.0`
 
-- [ ] `TuiWindow` with title, border and shadow
+- [x] ✅ `TuiWindow` with title, border and shadow
 - [ ] `TuiDialog` with modal stack
 - [ ] Window drag with mouse
 - [ ] Z-order (bring to front on click)

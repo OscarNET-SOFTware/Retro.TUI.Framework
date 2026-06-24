@@ -134,7 +134,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     regular key delivery to focused view, mouse hit-test dispatch, invisible-view
     exclusion, out-of-bounds no-op, pixel→cell `Col`/`Row` recomputation,
     `TuiGroup` bubble-up skip, and mouse-cursor pixel-position tracking.
-- 388 tests passing across all projects (0 failed).
+- `Retro.TUI.Windows`: new project implementing the windows layer (leaf layer,
+  not referenced by `Retro.TUI.Core`).
+  - `TuiWindow`: top-level container with title bar (system-menu glyph +
+    centered title), left and bottom border via `DrawBorder`, and optional drop
+    shadow. Active/inactive title bar palette selected via `IsActive`.
+    Layout contract: `InnerCol = AbsCol+1`, `InnerRow = AbsRow+2`,
+    `InnerWidth = Width-2`, `InnerHeight = Height-3`.
+- `TuiGroup.IsFrontmost(TuiView)`: returns whether a child is the frontmost
+  (last in z-order) direct child. Used by `TuiWindow.IsActive`.
+- `Retro.TUI.Windows.Tests`: new test project — `TuiWindowTests` covering
+  construction, layout contract, active-state detection and `Draw`.
+  `TuiGroupTests` extended with `IsFrontmost` coverage.
+- 410 tests passing across all projects (0 failed).
 
 ### Changed
 
@@ -153,11 +165,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Known limitations
 
-- Mouse bubble-up skips all `TuiGroup` subclasses (`current is TuiGroup`),
-  including future `TuiWindow` instances that override `HandleEvent` with their
-  own logic. To be revisited in M3 when `TuiWindow` is implemented — candidate
-  solutions: `IMouseEventHandler` interface or `HandlesMouseEvents` property
-  on `TuiView`.
+- Mouse bubble-up skip updated: `TuiGroup` plain instances are still skipped
+  during bubble-up; `TuiWindow` will override `HasCustomMouseHandling` (M3
+  step 3.3) to opt back in. Full resolution pending.
 - `TuiApplication.Run` requires a fully initialised `TuiHostOptions`
   (`Title`, `Width`, `Height` are `required`). No default options are provided
   by design — the caller always knows how it wants its window.
