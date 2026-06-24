@@ -322,6 +322,42 @@ public sealed class TuiWindowTests
         Assert.False(consumed);
     }
 
+    // ── Z-order activation ────────────────────────────────────────────────────
+
+    [Fact]
+    public void ButtonDown_OnInactiveWindow_BringsItToFront()
+    {
+        var desktop = new TuiDesktop { Col = 0, Row = 0, Width = 80, Height = 25 };
+        var back = new TuiWindow("Back", col: 0, row: 0, width: 20, height: 10);
+        var front = new TuiWindow("Front", col: 5, row: 5, width: 20, height: 10);
+        desktop.Add(back);
+        desktop.Add(front);
+
+        Assert.False(back.IsActive);
+
+        // Click anywhere on the back window's body (not its title bar).
+        back.HandleEvent(new TuiMouseEvent(TuiMouseAction.ButtonDown, Col: 2, Row: 4,
+                                            TuiMouseButton.Left));
+
+        Assert.True(back.IsActive);
+        Assert.False(front.IsActive);
+    }
+
+    [Fact]
+    public void ButtonDown_OnAlreadyActiveWindow_RemainsActive()
+    {
+        var desktop = new TuiDesktop { Col = 0, Row = 0, Width = 80, Height = 25 };
+        var window = new TuiWindow("Only", col: 0, row: 0, width: 20, height: 10);
+        desktop.Add(window);
+
+        Assert.True(window.IsActive);
+
+        window.HandleEvent(new TuiMouseEvent(TuiMouseAction.ButtonDown, Col: 2, Row: 4,
+                                              TuiMouseButton.Left));
+
+        Assert.True(window.IsActive);
+    }
+
     // ── Drag ──────────────────────────────────────────────────────────────────
 
     [Fact]

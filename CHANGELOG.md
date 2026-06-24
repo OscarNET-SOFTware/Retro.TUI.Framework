@@ -154,7 +154,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `TuiWindow` drag-to-move: `ButtonDown` on the title bar begins a drag
   operation; `Move` repositions the window clamped to the parent bounds;
   `ButtonUp` ends the drag. Guarded by `Movable` and `ShowTitle`.
-- 425 tests passing across all projects (0 failed).
+- `TuiView.MoveChildToFront` (internal): repositions a child to the end of the
+  internal children list without exposing the list directly.
+- `TuiGroup.BringToFront`: promotes a child to the front of the z-order.
+  No-op (no redraw) when the child is already frontmost.
+- `TuiWindow.HandleEvent`: any `ButtonDown` anywhere on the window calls
+  `BringToFront` on the parent before processing the specific click target.
+- 432 tests passing across all projects (0 failed).
 
 ### Changed
 

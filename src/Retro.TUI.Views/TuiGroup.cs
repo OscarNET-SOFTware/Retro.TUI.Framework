@@ -92,6 +92,35 @@ public class TuiGroup : TuiView
         return Children.Count > 0 && ReferenceEquals(Children[^1], child);
     }
 
+    /// <summary>
+    /// Brings <paramref name="child"/> to the front of the z-order, making it
+    /// the last-painted and last-dispatched direct child.
+    /// </summary>
+    /// <param name="child">The child to promote. Must not be <see langword="null"/>.</param>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="child"/> is <see langword="null"/>.
+    /// </exception>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when <paramref name="child"/> is not a direct child of this group.
+    /// </exception>
+    /// <remarks>
+    /// If <paramref name="child"/> is already the frontmost child (i.e.
+    /// <see cref="IsFrontmost"/> returns <see langword="true"/>), this method
+    /// is a no-op — no reorder and no <see cref="TuiView.Invalidate"/> call are
+    /// performed, avoiding unnecessary redraws on repeated clicks on the active
+    /// window.
+    /// </remarks>
+    public void BringToFront(TuiView child)
+    {
+        ArgumentNullException.ThrowIfNull(child);
+
+        if (IsFrontmost(child))
+            return;
+
+        MoveChildToFront(child);
+        Invalidate();
+    }
+
     // ── Hit-testing ───────────────────────────────────────────────────────────
 
     /// <summary>

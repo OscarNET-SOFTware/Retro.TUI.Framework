@@ -228,6 +228,32 @@ public abstract class TuiView
         return true;
     }
 
+    /// <summary>
+    /// Moves <paramref name="child"/> to the end of the internal children list,
+    /// making it the frontmost (last-painted, last-dispatched) child.
+    /// </summary>
+    /// <param name="child">The child to promote. Must not be <see langword="null"/>.</param>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="child"/> is <see langword="null"/>.
+    /// </exception>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when <paramref name="child"/> is not a direct child of this view.
+    /// </exception>
+    /// <remarks>
+    /// Called by <see cref="TuiGroup.BringToFront"/>. Callers are responsible
+    /// for invoking <see cref="Invalidate"/> when a repaint is required.
+    /// </remarks>
+    internal void MoveChildToFront(TuiView child)
+    {
+        ArgumentNullException.ThrowIfNull(child);
+
+        if (!_children.Remove(child))
+            throw new InvalidOperationException(
+                $"View '{child.GetType().Name}' is not a direct child of this view.");
+
+        _children.Add(child);
+    }
+
     // ── Internal dirty-flag reset (used by the render pass) ───────────────────
 
     /// <summary>

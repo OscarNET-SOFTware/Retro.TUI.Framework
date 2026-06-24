@@ -164,6 +164,72 @@ public sealed class TuiGroupTests
         Assert.False(group.IsFrontmost(outsider));
     }
 
+    // ── BringToFront ───────────────────────────────────────────────────────────
+
+    [Fact]
+    public void BringToFront_NullChild_ThrowsArgumentNullException()
+    {
+        var group = new TuiGroup();
+
+        Assert.Throws<ArgumentNullException>(() => group.BringToFront(null!));
+    }
+
+    [Fact]
+    public void BringToFront_NonMemberChild_ThrowsInvalidOperationException()
+    {
+        var group = new TuiGroup();
+        var outsider = new StubView();
+
+        Assert.Throws<InvalidOperationException>(() => group.BringToFront(outsider));
+    }
+
+    [Fact]
+    public void BringToFront_BackChild_MakesItFrontmost()
+    {
+        var group = new TuiGroup();
+        var back = new StubView();
+        var front = new StubView();
+        group.Add(back);
+        group.Add(front);
+
+        group.BringToFront(back);
+
+        Assert.True(group.IsFrontmost(back));
+        Assert.False(group.IsFrontmost(front));
+    }
+
+    [Fact]
+    public void BringToFront_AlreadyFrontmost_IsNoOp()
+    {
+        var group = new TuiGroup();
+        var back = new StubView();
+        var front = new StubView();
+        group.Add(back);
+        group.Add(front);
+
+        // front is already frontmost — call must be a no-op (no throw, no change).
+        group.BringToFront(front);
+
+        Assert.True(group.IsFrontmost(front));
+        Assert.False(group.IsFrontmost(back));
+    }
+
+    [Fact]
+    public void BringToFront_ThreeChildren_PromotesMiddleToFront()
+    {
+        var group = new TuiGroup();
+        var a = new StubView();
+        var b = new StubView();
+        var c = new StubView();
+        group.Add(a);
+        group.Add(b);
+        group.Add(c);
+
+        group.BringToFront(b);
+
+        Assert.True(group.IsFrontmost(b));
+    }
+
     // ── FindAt — hit-testing ──────────────────────────────────────────────────
 
     [Fact]

@@ -182,6 +182,11 @@ public class TuiWindow : TuiGroup
     /// Handled cases, evaluated in order:
     /// <list type="bullet">
     ///   <item><description>
+    ///     Any <see cref="TuiMouseAction.ButtonDown"/> anywhere on the window:
+    ///     calls <see cref="TuiGroup.BringToFront"/> on the parent so the window
+    ///     becomes the active (frontmost) child before further processing.
+    ///   </description></item>
+    ///   <item><description>
     ///     <see cref="TuiMouseAction.ButtonDown"/> on the system-menu close glyph
     ///     (column <see cref="TuiView.AbsCol"/>, row <see cref="TuiView.AbsRow"/>)
     ///     when <see cref="ShowTitle"/> is <see langword="true"/>: emits
@@ -207,8 +212,6 @@ public class TuiWindow : TuiGroup
     ///     (child dispatch).
     ///   </description></item>
     /// </list>
-    /// TODO (M3 step 3.5): any <see cref="TuiMouseAction.ButtonDown"/> anywhere on
-    /// the window should call <c>TuiDesktop.BringToFront</c> before dispatching.
     /// TODO (M4): clicking the close glyph should open the system-menu popup
     /// rather than emitting <see cref="TuiCommand.Close"/> directly.
     /// </remarks>
@@ -216,6 +219,16 @@ public class TuiWindow : TuiGroup
     {
         if (ev is not TuiMouseEvent mouse)
             return base.HandleEvent(ev);
+
+        // ── Bring to front on any click ───────────────────────────────────────
+        // Any ButtonDown on the window activates it (raises it to the front of
+        // the z-order) before processing the specific click target. This means
+        // even a click on [-] brings the window forward before emitting Close.
+        if (mouse.Action == TuiMouseAction.ButtonDown)
+        {
+            if (Parent is TuiGroup parentGroup)
+                parentGroup.BringToFront(this);
+        }
 
         // ── Close button ([-]) ────────────────────────────────────────────────
         // Must be checked before drag: ButtonDown on AbsCol,AbsRow is consumed
