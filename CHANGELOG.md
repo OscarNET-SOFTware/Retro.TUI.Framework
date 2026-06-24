@@ -146,7 +146,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Retro.TUI.Windows.Tests`: new test project — `TuiWindowTests` covering
   construction, layout contract, active-state detection and `Draw`.
   `TuiGroupTests` extended with `IsFrontmost` coverage.
-- 410 tests passing across all projects (0 failed).
+- `TuiView.HasCustomMouseHandling`: public virtual property (default `false`).
+  Allows `TuiGroup` subclasses to opt into mouse bubble-up in `TuiMessageLoop`.
+- `TuiWindow.HandleEvent`: intercepts `ButtonDown` on the system-menu close glyph
+  (`[-]`) and emits `TuiCommandEvent(TuiCommand.Close)` to the parent chain.
+  Guarded by `ShowTitle` — no event emitted when the title bar is hidden.
+- `TuiWindow` drag-to-move: `ButtonDown` on the title bar begins a drag
+  operation; `Move` repositions the window clamped to the parent bounds;
+  `ButtonUp` ends the drag. Guarded by `Movable` and `ShowTitle`.
+- 425 tests passing across all projects (0 failed).
 
 ### Changed
 
@@ -165,9 +173,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Known limitations
 
-- Mouse bubble-up skip updated: `TuiGroup` plain instances are still skipped
-  during bubble-up; `TuiWindow` will override `HasCustomMouseHandling` (M3
-  step 3.3) to opt back in. Full resolution pending.
 - `TuiApplication.Run` requires a fully initialised `TuiHostOptions`
   (`Title`, `Width`, `Height` are `required`). No default options are provided
   by design — the caller always knows how it wants its window.

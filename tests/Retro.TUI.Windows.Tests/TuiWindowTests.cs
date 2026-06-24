@@ -322,6 +322,141 @@ public sealed class TuiWindowTests
         Assert.False(consumed);
     }
 
+    // ── Drag ──────────────────────────────────────────────────────────────────
+
+    [Fact]
+    public void Drag_ButtonDownOnTitleBar_BeginsDrag_AndReturnsTrue()
+    {
+        var desktop = new TuiDesktop { Col = 0, Row = 0, Width = 80, Height = 25 };
+        var window = new TuiWindow("Hello", col: 5, row: 3, width: 20, height: 10);
+        desktop.Add(window);
+
+        // Col=6,Row=3 is on the title bar but not the [-] glyph (col=5).
+        var down = new TuiMouseEvent(TuiMouseAction.ButtonDown, Col: 6, Row: 3,
+                                     TuiMouseButton.Left);
+
+        bool consumed = window.HandleEvent(down);
+
+        Assert.True(consumed);
+    }
+
+    [Fact]
+    public void Drag_ButtonDownOnTitleBar_MovableTrue_UpdatesPosition()
+    {
+        var desktop = new TuiDesktop { Col = 0, Row = 0, Width = 80, Height = 25 };
+        var window = new TuiWindow("Hello", col: 5, row: 3, width: 20, height: 10);
+        desktop.Add(window);
+
+        // Begin drag at title bar (offset 1 from Col).
+        window.HandleEvent(new TuiMouseEvent(TuiMouseAction.ButtonDown, Col: 6, Row: 3,
+                                              TuiMouseButton.Left));
+
+        // Move to absolute col=10, row=5 → newCol = 10-1=9, newRow = 5-0=5.
+        window.HandleEvent(new TuiMouseEvent(TuiMouseAction.Move, Col: 10, Row: 5,
+                                              TuiMouseButton.None));
+
+        Assert.Equal(9, window.Col);
+        Assert.Equal(5, window.Row);
+    }
+
+    [Fact]
+    public void Drag_Move_ClampedToParentBounds_DoesNotExceedRightEdge()
+    {
+        var desktop = new TuiDesktop { Col = 0, Row = 0, Width = 80, Height = 25 };
+        var window = new TuiWindow("Hello", col: 5, row: 3, width: 20, height: 10);
+        desktop.Add(window);
+
+        // col=6 avoids the [-] glyph at col=5; offset = 6-5 = 1.
+        window.HandleEvent(new TuiMouseEvent(TuiMouseAction.ButtonDown, Col: 6, Row: 3,
+                                              TuiMouseButton.Left));
+
+        // Try to move way off the right edge: newCol = 999-1 = 998.
+        window.HandleEvent(new TuiMouseEvent(TuiMouseAction.Move, Col: 999, Row: 3,
+                                              TuiMouseButton.None));
+
+        // maxCol = 80 - 20 = 60.
+        Assert.Equal(60, window.Col);
+    }
+
+    [Fact]
+    public void Drag_Move_ClampedToParentBounds_DoesNotExceedLeftEdge()
+    {
+        var desktop = new TuiDesktop { Col = 0, Row = 0, Width = 80, Height = 25 };
+        var window = new TuiWindow("Hello", col: 5, row: 3, width: 20, height: 10);
+        desktop.Add(window);
+
+        // col=6 avoids the [-] glyph at col=5; offset = 6-5 = 1.
+        window.HandleEvent(new TuiMouseEvent(TuiMouseAction.ButtonDown, Col: 6, Row: 3,
+                                              TuiMouseButton.Left));
+
+        // Try to move off the left edge: newCol = -99-1 = -100.
+        window.HandleEvent(new TuiMouseEvent(TuiMouseAction.Move, Col: -99, Row: 3,
+                                              TuiMouseButton.None));
+
+        Assert.Equal(0, window.Col);
+    }
+
+    [Fact]
+    public void Drag_ButtonUp_EndsDrag_SubsequentMoveDoesNotMove()
+    {
+        var desktop = new TuiDesktop { Col = 0, Row = 0, Width = 80, Height = 25 };
+        var window = new TuiWindow("Hello", col: 5, row: 3, width: 20, height: 10);
+        desktop.Add(window);
+
+        window.HandleEvent(new TuiMouseEvent(TuiMouseAction.ButtonDown, Col: 6, Row: 3,
+                                              TuiMouseButton.Left));
+        window.HandleEvent(new TuiMouseEvent(TuiMouseAction.ButtonUp, Col: 6, Row: 3,
+                                              TuiMouseButton.Left));
+
+        // Move after ButtonUp — drag is over, position must not change.
+        window.HandleEvent(new TuiMouseEvent(TuiMouseAction.Move, Col: 20, Row: 10,
+                                              TuiMouseButton.None));
+
+        Assert.Equal(5, window.Col);
+        Assert.Equal(3, window.Row);
+    }
+
+    [Fact]
+    public void Drag_MovableFalse_ButtonDownOnTitleBar_DoesNotBeginDrag()
+    {
+        var desktop = new TuiDesktop { Col = 0, Row = 0, Width = 80, Height = 25 };
+        var window = new TuiWindow("Hello", col: 5, row: 3, width: 20, height: 10)
+        {
+            Movable = false,
+        };
+        desktop.Add(window);
+
+        window.HandleEvent(new TuiMouseEvent(TuiMouseAction.ButtonDown, Col: 6, Row: 3,
+                                              TuiMouseButton.Left));
+
+        // Subsequent Move must not reposition the window.
+        window.HandleEvent(new TuiMouseEvent(TuiMouseAction.Move, Col: 20, Row: 10,
+                                              TuiMouseButton.None));
+
+        Assert.Equal(5, window.Col);
+        Assert.Equal(3, window.Row);
+    }
+
+    [Fact]
+    public void Drag_TitleHidden_ButtonDownOnTitleRow_DoesNotBeginDrag()
+    {
+        var desktop = new TuiDesktop { Col = 0, Row = 0, Width = 80, Height = 25 };
+        var window = new TuiWindow("Hello", col: 5, row: 3, width: 20, height: 10)
+        {
+            ShowTitle = false,
+        };
+        desktop.Add(window);
+
+        window.HandleEvent(new TuiMouseEvent(TuiMouseAction.ButtonDown, Col: 6, Row: 3,
+                                              TuiMouseButton.Left));
+
+        window.HandleEvent(new TuiMouseEvent(TuiMouseAction.Move, Col: 20, Row: 10,
+                                              TuiMouseButton.None));
+
+        Assert.Equal(5, window.Col);
+        Assert.Equal(3, window.Row);
+    }
+
     // ── Test doubles ──────────────────────────────────────────────────────────
 
     /// <summary>A <see cref="TuiGroup"/> that records all events it receives.</summary>

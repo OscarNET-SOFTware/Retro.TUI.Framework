@@ -155,6 +155,13 @@ public class TuiWindow : TuiGroup
 
     // ── Mouse handling ────────────────────────────────────────────────────────
 
+    // Drag state — reset to false/0 whenever a drag ends or is never started.
+#pragma warning disable IDE0032
+    private bool _isDragging;
+#pragma warning restore IDE0032
+    private int _dragOffsetCol;
+    private int _dragOffsetRow;
+
     /// <inheritdoc/>
     /// <remarks>
     /// Always <see langword="true"/> for <see cref="TuiWindow"/>: the message loop
@@ -172,25 +179,34 @@ public class TuiWindow : TuiGroup
     /// to continue propagation.
     /// </returns>
     /// <remarks>
-    /// Current behaviour (M3 step 3.3):
+    /// Handled cases, evaluated in order:
     /// <list type="bullet">
     ///   <item><description>
     ///     <see cref="TuiMouseAction.ButtonDown"/> on the system-menu close glyph
     ///     (column <see cref="TuiView.AbsCol"/>, row <see cref="TuiView.AbsRow"/>)
-    ///     emits <see cref="TuiCommandEvent"/>(<see cref="TuiCommand.Close"/>)
-    ///     via <see cref="TuiView.HandleEvent"/> on the parent chain and returns
-    ///     <see langword="true"/>.
-    ///     The glyph is only active when <see cref="ShowTitle"/> is
-    ///     <see langword="true"/>; a click at the same cell when the title bar is
-    ///     hidden does not emit the command.
+    ///     when <see cref="ShowTitle"/> is <see langword="true"/>: emits
+    ///     <see cref="TuiCommandEvent"/>(<see cref="TuiCommand.Close"/>) to the
+    ///     parent chain and returns <see langword="true"/>.
+    ///   </description></item>
+    ///   <item><description>
+    ///     <see cref="TuiMouseAction.ButtonDown"/> anywhere else on the title bar row
+    ///     when <see cref="Movable"/> is <see langword="true"/>: begins a drag
+    ///     operation, capturing the cursor offset relative to <see cref="TuiView.Col"/>
+    ///     / <see cref="TuiView.Row"/>.
+    ///   </description></item>
+    ///   <item><description>
+    ///     <see cref="TuiMouseAction.Move"/> while dragging: repositions the window,
+    ///     clamped to the parent bounds via <see cref="TuiView.Parent"/>.
+    ///     Calls <see cref="TuiView.Invalidate"/> to request a redraw.
+    ///   </description></item>
+    ///   <item><description>
+    ///     <see cref="TuiMouseAction.ButtonUp"/> while dragging: ends the drag.
     ///   </description></item>
     ///   <item><description>
     ///     All other events are forwarded to <see cref="TuiGroup.HandleEvent"/>
     ///     (child dispatch).
     ///   </description></item>
     /// </list>
-    /// TODO (M3 step 3.4): intercept <see cref="TuiMouseAction.ButtonDown"/> on
-    /// the title bar row to begin a drag operation.
     /// TODO (M3 step 3.5): any <see cref="TuiMouseAction.ButtonDown"/> anywhere on
     /// the window should call <c>TuiDesktop.BringToFront</c> before dispatching.
     /// TODO (M4): clicking the close glyph should open the system-menu popup
@@ -198,16 +214,57 @@ public class TuiWindow : TuiGroup
     /// </remarks>
     public override bool HandleEvent(TuiEvent ev)
     {
-        if (ev is TuiMouseEvent { Action: TuiMouseAction.ButtonDown } mouse
+        if (ev is not TuiMouseEvent mouse)
+            return base.HandleEvent(ev);
+
+        // ── Close button ([-]) ────────────────────────────────────────────────
+        // Must be checked before drag: ButtonDown on AbsCol,AbsRow is consumed
+        // here and never reaches the drag logic below.
+        if (mouse.Action == TuiMouseAction.ButtonDown
             && ShowTitle
             && mouse.Col == AbsCol
             && mouse.Row == AbsRow)
         {
             // Emit Close up the ancestor chain so any registered handler can act.
             // The actual removal of this window from the desktop is the
-            // consumer's responsibility — TuiDesktop.Remove is wired in M3 step
-            // 3.5 / 3.6 when TuiDialog modal stack is introduced.
+            // consumer's responsibility — wired in M3 step 3.5 / 3.6 when
+            // TuiDialog modal stack is introduced.
             Parent?.HandleEvent(new TuiCommandEvent(TuiCommand.Close));
+            return true;
+        }
+
+        // ── Drag — begin ──────────────────────────────────────────────────────
+        if (mouse.Action == TuiMouseAction.ButtonDown
+            && Movable
+            && ShowTitle
+            && mouse.Row == AbsRow)
+        {
+            _isDragging = true;
+            _dragOffsetCol = mouse.Col - Col;
+            _dragOffsetRow = mouse.Row - Row;
+            return true;
+        }
+
+        // ── Drag — move ───────────────────────────────────────────────────────
+        if (mouse.Action == TuiMouseAction.Move && _isDragging)
+        {
+            int newCol = mouse.Col - _dragOffsetCol;
+            int newRow = mouse.Row - _dragOffsetRow;
+
+            // Clamp to parent bounds so the window cannot be dragged off-screen.
+            int maxCol = (Parent?.Width ?? int.MaxValue) - Width;
+            int maxRow = (Parent?.Height ?? int.MaxValue) - Height;
+            Col = Math.Clamp(newCol, 0, Math.Max(0, maxCol));
+            Row = Math.Clamp(newRow, 0, Math.Max(0, maxRow));
+
+            Invalidate();
+            return true;
+        }
+
+        // ── Drag — end ────────────────────────────────────────────────────────
+        if (mouse.Action == TuiMouseAction.ButtonUp && _isDragging)
+        {
+            _isDragging = false;
             return true;
         }
 
