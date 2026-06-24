@@ -369,6 +369,90 @@ public sealed class TuiMessageLoopTests
         Assert.Single(target.ReceivedEvents);
     }
 
+    [Fact]
+    public void DispatchEvents_MouseClick_DeliversToGroupWithCustomMouseHandling()
+    {
+        // A TuiGroup subclass that opts in via HasCustomMouseHandling must
+        // receive the event during bubble-up — exactly as TuiWindow will.
+        var fm = new TuiFocusManager();
+        var desktop = new TuiDesktop { Col = 0, Row = 0, Width = 80, Height = 25 };
+        var grid = BuildGrid(80, 25);
+        var loop = new TuiMessageLoop();
+
+        var customGroup = new CustomMouseGroup { Col = 0, Row = 0, Width = 80, Height = 25 };
+        var child = new RecordingView { Col = 0, Row = 0, Width = 80, Height = 25 };
+        customGroup.Add(child);
+        desktop.Add(customGroup);
+
+        float pixelX = grid.PixelX(1);
+        float pixelY = grid.PixelY(1);
+
+        using var queue = QueueWith(
+            new TuiMouseEvent(TuiMouseAction.ButtonDown, Col: 0, Row: 0,
+                              TuiMouseButton.Left, PixelX: pixelX, PixelY: pixelY));
+
+        loop.DispatchEvents(queue, desktop, fm, grid);
+
+        // Child receives it first (hit-test), then the custom group during bubble.
+        Assert.Single(child.ReceivedEvents);
+        Assert.Single(customGroup.ReceivedEvents);
+    }
+
+    [Fact]
+    public void DispatchEvents_MouseClick_CustomGroupConsumes_ChildNotReachedAgain()
+    {
+        // When the custom group consumes the event, bubble-up stops.
+        var fm = new TuiFocusManager();
+        var desktop = new TuiDesktop { Col = 0, Row = 0, Width = 80, Height = 25 };
+        var grid = BuildGrid(80, 25);
+        var loop = new TuiMessageLoop();
+
+        var customGroup = new CustomMouseGroup
+        {
+            Col = 0,
+            Row = 0,
+            Width = 80,
+            Height = 25,
+            ConsumeEvents = true,
+        };
+        var child = new RecordingView { Col = 0, Row = 0, Width = 80, Height = 25 };
+        customGroup.Add(child);
+        desktop.Add(customGroup);
+
+        float pixelX = grid.PixelX(1);
+        float pixelY = grid.PixelY(1);
+
+        using var queue = QueueWith(
+            new TuiMouseEvent(TuiMouseAction.ButtonDown, Col: 0, Row: 0,
+                              TuiMouseButton.Left, PixelX: pixelX, PixelY: pixelY));
+
+        loop.DispatchEvents(queue, desktop, fm, grid);
+
+        // Child was hit first; custom group consumed on bubble — desktop untouched.
+        Assert.Single(child.ReceivedEvents);
+        Assert.Single(customGroup.ReceivedEvents);
+    }
+
+    /// <summary>
+    /// A <see cref="TuiGroup"/> subclass that opts into mouse bubble-up by
+    /// overriding <see cref="TuiView.HasCustomMouseHandling"/>.
+    /// </summary>
+    private sealed class CustomMouseGroup : TuiGroup
+    {
+        public List<TuiEvent> ReceivedEvents { get; } = [];
+        public bool ConsumeEvents { get; set; }
+
+        public override bool HasCustomMouseHandling => true;
+
+        public override bool HandleEvent(TuiEvent ev)
+        {
+            ReceivedEvents.Add(ev);
+            // Do NOT call base.HandleEvent — that would re-dispatch downward
+            // to children, delivering the event a second time.
+            return ConsumeEvents;
+        }
+    }
+
     // ── Mouse cursor pixel tracking ──────────────────────────────────────────────
 
     [Fact]

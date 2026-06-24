@@ -69,6 +69,10 @@ internal sealed class TuiMessageLoop
 {
     // ── State ─────────────────────────────────────────────────────────────────
 
+    // _cursorPixelX/_cursorPixelY are plain fields updated on every mouse event by
+    // DispatchMouseEvent and read each frame by Run(). IDE0032 suppressed to avoid
+    // a spurious auto-property suggestion on fields with non-trivial write paths.
+#pragma warning disable IDE0032
     /// <summary>
     /// Last known horizontal position of the mouse pointer, in screen pixels.
     /// </summary>
@@ -90,6 +94,7 @@ internal sealed class TuiMessageLoop
     /// Exposed via <see cref="CursorPixelY"/> for testing.
     /// </remarks>
     private float _cursorPixelY;
+#pragma warning restore IDE0032
 
     /// <summary>
     /// Gets the last known horizontal pixel position of the mouse pointer.
@@ -255,11 +260,14 @@ internal sealed class TuiMessageLoop
     /// </param>
     /// <remarks>
     /// <see cref="TuiGroup"/> instances are skipped during the bubble phase
-    /// because their <see cref="TuiGroup.HandleEvent"/> implementation
-    /// re-dispatches downward to children — which would deliver the event a
-    /// second time to the same target that was already tried via hit-testing.
-    /// See the <c>TODO (M3)</c> comment at the <c>is TuiGroup</c> check below for
-    /// a known limitation of this approach.
+    /// when <see cref="TuiView.HasCustomMouseHandling"/> is <see langword="false"/>
+    /// (the default), because their <see cref="TuiGroup.HandleEvent"/> implementation
+    /// re-dispatches downward to children — which would deliver the event a second
+    /// time to the same target that was already tried via hit-testing.
+    /// <see cref="TuiGroup"/> subclasses that override
+    /// <see cref="TuiView.HasCustomMouseHandling"/> to return <see langword="true"/>
+    /// (e.g. <c>TuiWindow</c>) are included in the bubble so they can handle
+    /// title-bar clicks, drag operations, and similar container-level gestures.
     /// </remarks>
     private void DispatchMouseEvent(TuiMouseEvent mouseEvent, TuiDesktop desktop, TuiGrid grid)
     {
@@ -281,20 +289,15 @@ internal sealed class TuiMessageLoop
             return;
 
         // Bubble up the ancestor chain until the event is consumed.
-        // Pure TuiGroup instances (and subclasses without custom HandleEvent)
-        // are skipped: their HandleEvent only re-dispatches to children and
-        // would deliver the event twice.
-        //
-        // TODO (M3): 'is TuiGroup' skips all TuiGroup subclasses during mouse
-        // bubble-up, including future TuiWindow instances that override
-        // HandleEvent with their own logic. When TuiWindow is implemented,
-        // revisit this condition — consider introducing IMouseEventHandler or
-        // a HandlesMouseEvents property on TuiView to distinguish pure
-        // containers from views with custom event handling.
+        // Pure TuiGroup instances that declare no custom mouse handling are
+        // skipped: their HandleEvent only re-dispatches to children and would
+        // deliver the event twice. TuiGroup subclasses that override
+        // HasCustomMouseHandling (e.g. TuiWindow) are included so they can
+        // intercept title-bar clicks, drag operations, etc.
         TuiView? current = target;
         while (current is not null)
         {
-            if (!current.Enabled || current is TuiGroup)
+            if (!current.Enabled || (current is TuiGroup && !current.HasCustomMouseHandling))
             {
                 current = current.Parent;
                 continue;

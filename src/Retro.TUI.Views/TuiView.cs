@@ -44,7 +44,13 @@ public abstract class TuiView
     // ── Backing fields ────────────────────────────────────────────────────────
 
     private readonly List<TuiView> _children = [];
+
+    // _isDirty is intentionally a plain field: Invalidate() and ClearDirty() mutate
+    // it directly without property semantics. IDE0032 suppressed to avoid a spurious
+    // auto-property suggestion on a field with non-trivial write paths.
+#pragma warning disable IDE0032
     private bool _isDirty = true;
+#pragma warning restore IDE0032
 
     // ── Position and size (grid cells, relative to parent) ────────────────────
 
@@ -104,6 +110,29 @@ public abstract class TuiView
     /// </summary>
     /// <value>Defaults to <see langword="false"/>.</value>
     public bool Focusable { get; set; }
+
+    // ── Mouse handling opt-in ─────────────────────────────────────────────────
+
+    /// <summary>
+    /// Gets a value indicating whether this view contains custom mouse-event
+    /// handling logic in its <see cref="HandleEvent"/> override.
+    /// </summary>
+    /// <value>Defaults to <see langword="false"/>.</value>
+    /// <remarks>
+    /// The message loop uses this property during the mouse-event bubble-up phase
+    /// to decide whether to invoke <see cref="HandleEvent"/> on a
+    /// <see cref="TuiGroup"/> subclass. Plain <see cref="TuiGroup"/> instances
+    /// (where this returns <see langword="false"/>) are skipped because their
+    /// <see cref="HandleEvent"/> only re-dispatches downward to children, which
+    /// would deliver the event a second time to a target already tried via
+    /// hit-testing.
+    /// <para/>
+    /// Override and return <see langword="true"/> in any <see cref="TuiGroup"/>
+    /// subclass that needs to intercept mouse events at the container level —
+    /// for example, <c>TuiWindow</c> overrides this to handle title-bar clicks
+    /// and drag operations.
+    /// </remarks>
+    public virtual bool HasCustomMouseHandling => false;
 
     // ── Tree ──────────────────────────────────────────────────────────────────
 

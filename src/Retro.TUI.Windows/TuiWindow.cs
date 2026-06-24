@@ -13,6 +13,7 @@
 // </copyright>
 // ---------------------------------------------------------------------------------------------------------------------
 
+using Retro.TUI.Events;
 using Retro.TUI.Rendering;
 using Retro.TUI.Theming;
 using Retro.TUI.Views;
@@ -151,6 +152,67 @@ public class TuiWindow : TuiGroup
     /// <see cref="TuiColorRole.WindowTitleInactiveForeground"/> (inactive).
     /// </remarks>
     public bool IsActive => Parent is TuiGroup parentGroup && parentGroup.IsFrontmost(this);
+
+    // ── Mouse handling ────────────────────────────────────────────────────────
+
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Always <see langword="true"/> for <see cref="TuiWindow"/>: the message loop
+    /// must include this view in mouse bubble-up so that title-bar clicks
+    /// (close button, drag) are delivered to <see cref="HandleEvent"/>.
+    /// </remarks>
+    public override bool HasCustomMouseHandling => true;
+
+    /// <summary>
+    /// Handles mouse events targeted at this window's chrome.
+    /// </summary>
+    /// <param name="ev">The event to process.</param>
+    /// <returns>
+    /// <see langword="true"/> if the event was consumed; <see langword="false"/>
+    /// to continue propagation.
+    /// </returns>
+    /// <remarks>
+    /// Current behaviour (M3 step 3.3):
+    /// <list type="bullet">
+    ///   <item><description>
+    ///     <see cref="TuiMouseAction.ButtonDown"/> on the system-menu close glyph
+    ///     (column <see cref="TuiView.AbsCol"/>, row <see cref="TuiView.AbsRow"/>)
+    ///     emits <see cref="TuiCommandEvent"/>(<see cref="TuiCommand.Close"/>)
+    ///     via <see cref="TuiView.HandleEvent"/> on the parent chain and returns
+    ///     <see langword="true"/>.
+    ///     The glyph is only active when <see cref="ShowTitle"/> is
+    ///     <see langword="true"/>; a click at the same cell when the title bar is
+    ///     hidden does not emit the command.
+    ///   </description></item>
+    ///   <item><description>
+    ///     All other events are forwarded to <see cref="TuiGroup.HandleEvent"/>
+    ///     (child dispatch).
+    ///   </description></item>
+    /// </list>
+    /// TODO (M3 step 3.4): intercept <see cref="TuiMouseAction.ButtonDown"/> on
+    /// the title bar row to begin a drag operation.
+    /// TODO (M3 step 3.5): any <see cref="TuiMouseAction.ButtonDown"/> anywhere on
+    /// the window should call <c>TuiDesktop.BringToFront</c> before dispatching.
+    /// TODO (M4): clicking the close glyph should open the system-menu popup
+    /// rather than emitting <see cref="TuiCommand.Close"/> directly.
+    /// </remarks>
+    public override bool HandleEvent(TuiEvent ev)
+    {
+        if (ev is TuiMouseEvent { Action: TuiMouseAction.ButtonDown } mouse
+            && ShowTitle
+            && mouse.Col == AbsCol
+            && mouse.Row == AbsRow)
+        {
+            // Emit Close up the ancestor chain so any registered handler can act.
+            // The actual removal of this window from the desktop is the
+            // consumer's responsibility — TuiDesktop.Remove is wired in M3 step
+            // 3.5 / 3.6 when TuiDialog modal stack is introduced.
+            Parent?.HandleEvent(new TuiCommandEvent(TuiCommand.Close));
+            return true;
+        }
+
+        return base.HandleEvent(ev);
+    }
 
     // ── Rendering ─────────────────────────────────────────────────────────────
 

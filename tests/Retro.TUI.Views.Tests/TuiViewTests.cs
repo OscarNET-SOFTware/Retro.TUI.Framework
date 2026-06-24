@@ -48,6 +48,7 @@ public sealed class TuiViewTests
         Assert.True(view.Visible);
         Assert.True(view.Enabled);
         Assert.False(view.Focusable);
+        Assert.False(view.HasCustomMouseHandling);
         Assert.Null(view.Parent);
         Assert.True(view.IsDirty);   // new views are dirty until first draw
         Assert.Equal(0, view.Col);

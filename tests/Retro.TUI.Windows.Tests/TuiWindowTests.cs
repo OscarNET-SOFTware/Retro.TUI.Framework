@@ -13,6 +13,7 @@
 // </copyright>
 // ---------------------------------------------------------------------------------------------------------------------
 
+using Retro.TUI.Events;
 using Retro.TUI.Rendering;
 using Retro.TUI.Theming;
 using Retro.TUI.Views;
@@ -223,7 +224,117 @@ public sealed class TuiWindowTests
         Assert.True(child.WasDrawn);
     }
 
+    // ── HasCustomMouseHandling ────────────────────────────────────────────────
+
+    [Fact]
+    public void HasCustomMouseHandling_IsTrue()
+    {
+        var window = new TuiWindow("Hello", 0, 0, 20, 10);
+
+        Assert.True(window.HasCustomMouseHandling);
+    }
+
+    // ── HandleEvent — close button ────────────────────────────────────────────
+
+    [Fact]
+    public void HandleEvent_ButtonDownOnCloseGlyph_WithTitleShown_ReturnsTrue()
+    {
+        var desktop = new TuiDesktop { Col = 0, Row = 0, Width = 80, Height = 25 };
+        var window = new TuiWindow("Hello", col: 5, row: 3, width: 20, height: 10);
+        desktop.Add(window);
+
+        // AbsCol=5, AbsRow=3 is where the [-] glyph is painted.
+        var ev = new TuiMouseEvent(TuiMouseAction.ButtonDown, Col: 5, Row: 3,
+                                   TuiMouseButton.Left);
+
+        bool consumed = window.HandleEvent(ev);
+
+        Assert.True(consumed);
+    }
+
+    [Fact]
+    public void HandleEvent_ButtonDownOnCloseGlyph_WithTitleHidden_ReturnsFalse()
+    {
+        var desktop = new TuiDesktop { Col = 0, Row = 0, Width = 80, Height = 25 };
+        var window = new TuiWindow("Hello", col: 5, row: 3, width: 20, height: 10)
+        {
+            ShowTitle = false,
+        };
+        desktop.Add(window);
+
+        // Same cell — but ShowTitle=false so no glyph is rendered; should not consume.
+        var ev = new TuiMouseEvent(TuiMouseAction.ButtonDown, Col: 5, Row: 3,
+                                   TuiMouseButton.Left);
+
+        bool consumed = window.HandleEvent(ev);
+
+        Assert.False(consumed);
+    }
+
+    [Fact]
+    public void HandleEvent_ButtonDownOnCloseGlyph_EmitsCloseCommandToParent()
+    {
+        var parent = new RecordingGroup { Col = 0, Row = 0, Width = 80, Height = 25 };
+        var window = new TuiWindow("Hello", col: 5, row: 3, width: 20, height: 10);
+        parent.Add(window);
+
+        var ev = new TuiMouseEvent(TuiMouseAction.ButtonDown, Col: 5, Row: 3,
+                                   TuiMouseButton.Left);
+
+        window.HandleEvent(ev);
+
+        TuiCommandEvent? closeCmd = parent.ReceivedEvents
+            .OfType<TuiCommandEvent>()
+            .FirstOrDefault(c => c.Command == TuiCommand.Close);
+
+        Assert.NotNull(closeCmd);
+    }
+
+    [Fact]
+    public void HandleEvent_ButtonDownOutsideCloseGlyph_ReturnsFalse()
+    {
+        var desktop = new TuiDesktop { Col = 0, Row = 0, Width = 80, Height = 25 };
+        var window = new TuiWindow("Hello", col: 5, row: 3, width: 20, height: 10);
+        desktop.Add(window);
+
+        // Click in the middle of the window — not on the [-] glyph.
+        var ev = new TuiMouseEvent(TuiMouseAction.ButtonDown, Col: 10, Row: 6,
+                                   TuiMouseButton.Left);
+
+        bool consumed = window.HandleEvent(ev);
+
+        Assert.False(consumed);
+    }
+
+    [Fact]
+    public void HandleEvent_ButtonUpOnCloseGlyph_ReturnsFalse()
+    {
+        // Only ButtonDown triggers Close — ButtonUp is ignored.
+        var desktop = new TuiDesktop { Col = 0, Row = 0, Width = 80, Height = 25 };
+        var window = new TuiWindow("Hello", col: 5, row: 3, width: 20, height: 10);
+        desktop.Add(window);
+
+        var ev = new TuiMouseEvent(TuiMouseAction.ButtonUp, Col: 5, Row: 3,
+                                   TuiMouseButton.Left);
+
+        bool consumed = window.HandleEvent(ev);
+
+        Assert.False(consumed);
+    }
+
     // ── Test doubles ──────────────────────────────────────────────────────────
+
+    /// <summary>A <see cref="TuiGroup"/> that records all events it receives.</summary>
+    private sealed class RecordingGroup : TuiGroup
+    {
+        public List<TuiEvent> ReceivedEvents { get; } = [];
+
+        public override bool HandleEvent(TuiEvent ev)
+        {
+            ReceivedEvents.Add(ev);
+            return base.HandleEvent(ev);
+        }
+    }
 
     /// <summary>A minimal <see cref="TuiView"/> that records whether <see cref="Draw"/> was called.</summary>
     private sealed class RecordingView : TuiView
