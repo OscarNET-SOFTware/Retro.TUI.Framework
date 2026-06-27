@@ -5,9 +5,15 @@
 
 [![Licencia: MIT](https://img.shields.io/badge/Licencia-MIT-yellow.svg)](LICENSE.md)
 [![.NET](https://img.shields.io/badge/.NET-10.0-purple.svg)](https://dotnet.microsoft.com/download/dotnet/10.0)
-[![Plataforma](https://img.shields.io/badge/plataforma-Windows%20%7C%20Linux%20%7C%20macOS-blue.svg)]()
+[![Plataforma](https://img.shields.io/badge/Plataforma-Windows%20%7C%20Linux%20%7C%20macOS-blue.svg)]()
+[![Compilación](https://img.shields.io/github/actions/workflow/status/OscarNET-SOFTware/Retro.TUI.Framework/ci.yml?branch=develop&label=Compilación)](https://github.com/OscarNET-SOFTware/Retro.TUI.Framework/actions)
+[![Cobertura](https://img.shields.io/badge/Cobertura-65%25-yellow)](https://github.com/OscarNET-SOFTware/Retro.TUI.Framework)
+[![NuGet](https://img.shields.io/nuget/v/Retro.TUI.Core?label=NuGet&color=blue)](https://www.nuget.org/packages/Retro.TUI.Core)
+[![Descargas](https://img.shields.io/nuget/dt/Retro.TUI.Core?label=Descargas)](https://www.nuget.org/packages/Retro.TUI.Core)
 
 > 📖 [English version](README.md)
+
+![Aplicación de ejemplo (vista previa)](docs/Retro.TUI.Framework-SampleApp-Preview.png)
 
 ---
 

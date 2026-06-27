@@ -63,4 +63,19 @@
     <Using Include="System.Diagnostics.CodeAnalysis" />
   </ItemGroup>
 
+  <!-- ── NuGet package content files ────────────────────────────────────── -->
+  <!-- MSBuild needs explicit paths to physical files so dotnet pack can     -->
+  <!-- embed them. PackageIcon/PackageReadmeFile above only                  -->
+  <!-- declare the names; these None items point to the actual files at      -->
+  <!-- the repo root.                                                        -->
+  <!-- $(MSBuildThisFileDirectory) = src\  →  ..\ = repo root                -->
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)..\icon.png"
+          Pack="true" PackagePath="\" Visible="false" />
+    <None Include="$(MSBuildThisFileDirectory)..\README.md"
+          Pack="true" PackagePath="\" Visible="false" />
+    <None Include="$(MSBuildThisFileDirectory)..\THIRD-PARTY-NOTICES.md"
+          Pack="true" PackagePath="\" Visible="false" />
+  </ItemGroup>
+
 </Project>
