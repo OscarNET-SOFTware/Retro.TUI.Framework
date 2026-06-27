@@ -186,7 +186,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   No-op (no redraw) when the child is already frontmost.
 - `TuiWindow.HandleEvent`: any `ButtonDown` anywhere on the window calls
   `BringToFront` on the parent before processing the specific click target.
-- 436 tests passing across all projects (0 failed).
+- **`IModalDialog`** (`Retro.TUI.Views`): minimal two-member contract
+  (`CloseRequested`, `Result`) that decouples the modal loop from
+  `Retro.TUI.Windows`, preserving the dependency graph.
+- **`TuiDesktop.PushModal` / `PopModal` / `HasModal` / `ActiveModal`**:
+  modal stack integrated into the root view container.
+- **`TuiDialog`** (`Retro.TUI.Windows`): modal window that extends
+  `TuiWindow` and implements `IModalDialog`. `Close(result)` signals
+  the nested loop to stop; idempotent on repeated calls.
+- **`TuiApplication.RunModal`**: protected method that orchestrates the
+  full modal lifecycle — push, nested event loop, pop — returning the
+  `TuiCommand` result to the caller.
+- **`TuiMessageLoop.RunIteration`**: single-iteration entry point
+  extracted from `Run`, used by `RunModal` for the nested loop.
+- 449 tests passing across all projects (0 failed).
 
 ### Changed
 
@@ -197,6 +210,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   executes a full frame inside a matched `BeginFrame`/`EndFrame` pair with
   `try/finally` guarantee, allowing `Retro.TUI.Core` to control the render cycle
   without requiring `InternalsVisibleTo` access to `Retro.TUI.Rendering` internals.
+- **`TuiMessageLoop` event dispatch**: when `TuiDesktop.HasModal` is
+  `true`, all keyboard, mouse and command events are routed exclusively
+  to `ActiveModal`. Escape (`TuiCommand.Cancel`) goes to the active
+  modal only; the application's `OnCommand` is suppressed while a modal
+  is open.
 
 ### Removed
 

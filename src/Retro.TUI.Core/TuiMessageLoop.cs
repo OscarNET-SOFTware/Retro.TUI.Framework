@@ -160,28 +160,8 @@ internal sealed class TuiMessageLoop
 
         while (!ct.IsCancellationRequested)
         {
-            // ── Step 1: poll OS events ────────────────────────────────────
-            bool keepRunning = host.PollEvents(queue);
-            if (!keepRunning)
+            if (!RunIteration(host, queue, desktop, focusManager, renderCtx, onCommand))
                 break;
-
-            // ── Step 2: dispatch framework events ─────────────────────────
-            DispatchEvents(queue, desktop, focusManager, renderCtx.Grid, onCommand);
-
-            // ── Step 3: update timers (reserved for future milestone) ──────
-            // UpdateTimers();
-
-            // ── Step 4: render ─────────────────────────────────────────────
-            renderCtx.RenderFrame(host.AcquireRenderSurface(), ctx =>
-            {
-                desktop.Draw(ctx);
-
-                // ── Step 4b: draw the custom mouse cursor on top of everything ──
-                ctx.DrawMouseCursor(_cursorPixelX, _cursorPixelY);
-            });
-
-            // ── Step 5: present ───────────────────────────────────────────
-            host.Present();
         }
     }
 
@@ -194,13 +174,21 @@ internal sealed class TuiMessageLoop
     /// <param name="desktop">The root view of the visual tree.</param>
     /// <param name="focusManager">The keyboard focus manager.</param>
     /// <param name="grid">
+    /// The active character grid, used to recompute <see cref="TuiMouseEvent.Col"/>
+    /// and <see cref="TuiMouseEvent.Row"/> from pixel coordinates.
+    /// </param>
     /// <param name="onCommand">
     /// Optional callback invoked for each <see cref="TuiCommandEvent"/> before it
     /// is forwarded to the desktop tree. Pass <see langword="null"/> to skip.
     /// </param>
-    /// The active character grid, used to recompute <see cref="TuiMouseEvent.Col"/>
-    /// and <see cref="TuiMouseEvent.Row"/> from pixel coordinates.
-    /// </param>
+    /// <remarks>
+    /// When <see cref="TuiDesktop.HasModal"/> is <see langword="true"/>, keyboard
+    /// events and mouse events are routed exclusively to
+    /// <see cref="TuiDesktop.ActiveModal"/>. The application-level
+    /// <paramref name="onCommand"/> callback is suppressed while a modal is active
+    /// so that commands from inside the dialog do not reach the outer
+    /// <c>OnCommand</c> handler.
+    /// </remarks>
     internal void DispatchEvents(
         TuiEventQueue queue,
         TuiDesktop desktop,
@@ -210,7 +198,6 @@ internal sealed class TuiMessageLoop
     {
         while (queue.TryRead(out TuiEvent? ev))
         {
-            // TryRead guarantees a non-null value when it returns true.
             if (ev is null)
                 continue;
 
@@ -225,10 +212,15 @@ internal sealed class TuiMessageLoop
                     break;
 
                 case TuiCommandEvent commandEvent:
-                    // Notify the application first; then broadcast to the desktop
-                    // so the view tree can also react (e.g. close the active dialog).
-                    onCommand?.Invoke(commandEvent);
-                    desktop.HandleEvent(commandEvent);
+                    // While a modal is active, commands go only to the modal.
+                    // The outer onCommand callback is intentionally suppressed.
+                    if (desktop.HasModal)
+                        desktop.ActiveModal?.HandleEvent(commandEvent);
+                    else
+                    {
+                        onCommand?.Invoke(commandEvent);
+                        desktop.HandleEvent(commandEvent);
+                    }
                     break;
 
                 default:
@@ -243,7 +235,10 @@ internal sealed class TuiMessageLoop
     /// <list type="bullet">
     ///   <item><description>Tab → <see cref="TuiFocusManager.FocusNext"/></description></item>
     ///   <item><description>Shift+Tab → <see cref="TuiFocusManager.FocusPrevious"/></description></item>
-    ///   <item><description>Escape → posts <see cref="TuiCommand.Cancel"/> to the desktop</description></item>
+    ///   <item><description>
+    ///     Escape → <see cref="TuiCommand.Cancel"/> to the active modal when
+    ///     <see cref="TuiDesktop.HasModal"/>; otherwise to the desktop.
+    ///   </description></item>
     ///   <item><description>All other keys → focused view via <see cref="TuiFocusManager.Current"/></description></item>
     /// </list>
     /// </summary>
@@ -252,7 +247,6 @@ internal sealed class TuiMessageLoop
         TuiDesktop desktop,
         TuiFocusManager focusManager)
     {
-        // Tab / Shift+Tab: focus navigation — consumed here, not forwarded.
         if (keyEvent.Key == TuiKey.Tab)
         {
             if ((keyEvent.Modifiers & TuiModifiers.Shift) != 0)
@@ -263,14 +257,20 @@ internal sealed class TuiMessageLoop
             return;
         }
 
-        // Escape: synthesize a Cancel command and broadcast via the desktop.
         if (keyEvent.Key == TuiKey.Escape)
         {
-            desktop.HandleEvent(new TuiCommandEvent(TuiCommand.Cancel));
+            var cancelCmd = new TuiCommandEvent(TuiCommand.Cancel);
+
+            // When a modal is active, Escape goes only to the modal — the
+            // application's OnCommand never sees it.
+            if (desktop.HasModal)
+                desktop.ActiveModal?.HandleEvent(cancelCmd);
+            else
+                desktop.HandleEvent(cancelCmd);
+
             return;
         }
 
-        // All other keyboard events go to the currently focused view.
         focusManager.Current?.HandleEvent(keyEvent);
     }
 
@@ -316,6 +316,15 @@ internal sealed class TuiMessageLoop
         int col = grid.CellCol(mouseEvent.PixelX);
         int row = grid.CellRow(mouseEvent.PixelY);
         TuiMouseEvent resolvedEvent = mouseEvent with { Col = col, Row = row };
+
+        // ── Modal fast path ───────────────────────────────────────────────────
+        // When a modal is active, all mouse events go exclusively to it.
+        // FindAt and the normal bubble are bypassed entirely.
+        if (desktop.HasModal)
+        {
+            desktop.ActiveModal?.HandleEvent(resolvedEvent);
+            return;
+        }
 
         // ── Captured-view fast path ───────────────────────────────────────────
         // While a view holds capture, FindAt is irrelevant: every mouse event
@@ -371,5 +380,52 @@ internal sealed class TuiMessageLoop
 
             current = current.Parent;
         }
+    }
+
+    // ── Single-iteration entry point (used by TuiApplication.RunModal) ────────
+
+    /// <summary>
+    /// Executes one poll → dispatch → render → present iteration.
+    /// </summary>
+    /// <param name="host">The native window host.</param>
+    /// <param name="queue">The event queue shared with the host.</param>
+    /// <param name="desktop">The root view of the visual tree.</param>
+    /// <param name="focusManager">The keyboard focus manager.</param>
+    /// <param name="renderCtx">The render context for the current session.</param>
+    /// <param name="onCommand">
+    /// Optional callback invoked for each <see cref="TuiCommandEvent"/>.
+    /// </param>
+    /// <returns>
+    /// <see langword="true"/> if the host is still running and the loop should
+    /// continue; <see langword="false"/> if the host signalled shutdown.
+    /// </returns>
+    /// <remarks>
+    /// Extracted from <see cref="Run"/> so that <c>TuiApplication.RunModal</c>
+    /// can drive the same cycle inside a nested loop without duplicating logic.
+    /// Visibility is <c>internal</c>: only <c>TuiApplication</c> (same assembly
+    /// via <c>InternalsVisibleTo</c>) may call this method.
+    /// </remarks>
+    internal bool RunIteration(
+        ITuiHost host,
+        TuiEventQueue queue,
+        TuiDesktop desktop,
+        TuiFocusManager focusManager,
+        TuiRenderContext renderCtx,
+        Action<TuiCommandEvent>? onCommand = null)
+    {
+        bool keepRunning = host.PollEvents(queue);
+        if (!keepRunning)
+            return false;
+
+        DispatchEvents(queue, desktop, focusManager, renderCtx.Grid, onCommand);
+
+        renderCtx.RenderFrame(host.AcquireRenderSurface(), ctx =>
+        {
+            desktop.Draw(ctx);
+            ctx.DrawMouseCursor(_cursorPixelX, _cursorPixelY);
+        });
+
+        host.Present();
+        return true;
     }
 }

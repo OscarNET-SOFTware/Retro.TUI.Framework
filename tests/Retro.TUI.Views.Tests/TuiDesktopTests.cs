@@ -13,6 +13,8 @@
 // </copyright>
 // ---------------------------------------------------------------------------------------------------------------------
 
+using Retro.TUI.Rendering;
+
 namespace Retro.TUI.Views;
 
 /// <summary>
@@ -28,7 +30,7 @@ public sealed class TuiDesktopTests
     {
         var desktop = new TuiDesktop();
 
-        Assert.IsAssignableFrom<TuiGroup>(desktop);
+        Assert.IsType<TuiGroup>(desktop, exactMatch: false);
     }
 
     [Fact]
@@ -36,7 +38,7 @@ public sealed class TuiDesktopTests
     {
         var desktop = new TuiDesktop();
 
-        Assert.IsAssignableFrom<TuiView>(desktop);
+        Assert.IsType<TuiView>(desktop, exactMatch: false);
     }
 
     // ── Default state ─────────────────────────────────────────────────────────
@@ -105,5 +107,90 @@ public sealed class TuiDesktopTests
         TuiView? hit = desktop.FindAt(absCol: 5, absRow: 5);
 
         Assert.Null(hit);
+    }
+
+    // ── Modal stack ───────────────────────────────────────────────────────────
+
+    [Fact]
+    public void HasModal_WhenEmpty_IsFalse()
+    {
+        var desktop = new TuiDesktop { Width = 80, Height = 25 };
+        Assert.False(desktop.HasModal);
+    }
+
+    [Fact]
+    public void ActiveModal_WhenEmpty_IsNull()
+    {
+        var desktop = new TuiDesktop { Width = 80, Height = 25 };
+        Assert.Null(desktop.ActiveModal);
+    }
+
+    [Fact]
+    public void PushModal_SetsHasModalTrue_AndAddsChild()
+    {
+        var desktop = new TuiDesktop { Width = 80, Height = 25 };
+        var dialog = new StubView { Col = 0, Row = 0, Width = 20, Height = 10 };
+
+        desktop.PushModal(dialog);
+
+        Assert.True(desktop.HasModal);
+        Assert.Equal(dialog, desktop.ActiveModal);
+        // Verify the dialog participates in hit-testing (i.e. it was added as a child).
+        Assert.Equal(dialog, desktop.FindAt(0, 0));
+    }
+
+    [Fact]
+    public void PopModal_RemovesTopModal_AndChild()
+    {
+        var desktop = new TuiDesktop { Width = 80, Height = 25 };
+        var dialog = new StubView { Col = 0, Row = 0, Width = 20, Height = 10 };
+        desktop.PushModal(dialog);
+
+        var popped = desktop.PopModal();
+
+        Assert.Equal(dialog, popped);
+        Assert.False(desktop.HasModal);
+        // Verify the dialog no longer participates in hit-testing (removed from children).
+        Assert.Null(desktop.FindAt(0, 0));
+    }
+
+    [Fact]
+    public void PopModal_WhenEmpty_ReturnsNull()
+    {
+        var desktop = new TuiDesktop { Width = 80, Height = 25 };
+        Assert.Null(desktop.PopModal());
+    }
+
+    [Fact]
+    public void PushModal_NestedModals_ActiveModalIsTopmost()
+    {
+        var desktop = new TuiDesktop { Width = 80, Height = 25 };
+        var first = new StubView { Width = 20, Height = 10 };
+        var second = new StubView { Width = 20, Height = 10 };
+
+        desktop.PushModal(first);
+        desktop.PushModal(second);
+
+        Assert.Equal(second, desktop.ActiveModal);
+    }
+
+    [Fact]
+    public void PopModal_NestedModals_RestoresPreviousModal()
+    {
+        var desktop = new TuiDesktop { Width = 80, Height = 25 };
+        var first = new StubView { Width = 20, Height = 10 };
+        var second = new StubView { Width = 20, Height = 10 };
+
+        desktop.PushModal(first);
+        desktop.PushModal(second);
+        desktop.PopModal();
+
+        Assert.Equal(first, desktop.ActiveModal);
+        Assert.True(desktop.HasModal);
+    }
+
+    private sealed class StubView : TuiView
+    {
+        public override void Draw(TuiRenderContext ctx) { }
     }
 }

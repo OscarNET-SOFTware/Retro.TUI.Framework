@@ -13,6 +13,8 @@
 // </copyright>
 // ---------------------------------------------------------------------------------------------------------------------
 
+using System.Collections;
+
 using Retro.TUI.Events;
 using Retro.TUI.Hosting;
 using Retro.TUI.Rendering;
@@ -93,6 +95,21 @@ public abstract class TuiApplication : IDisposable
     private CancellationTokenSource? _cts;
     private bool _disposed;
 
+    // Fields promoted from Run() locals so that RunModal() can drive the same
+    // poll → dispatch → render → present cycle inside a nested loop.
+    // All four are null outside an active Run() session.
+    //
+    // CA2213 is suppressed for _queue and _renderCtx: both are created inside
+    // Run() with 'using' declarations and are disposed when Run() returns.
+    // These fields are non-owning references — TuiApplication.Dispose() must
+    // NOT dispose them, as they may already be disposed by the time it is called.
+#pragma warning disable CA2213
+    private TuiMessageLoop? _loop;
+    private ITuiHost? _host;
+    private TuiEventQueue? _queue;
+    private TuiRenderContext? _renderCtx;
+#pragma warning restore CA2213
+
     // ── Public API ────────────────────────────────────────────────────────────
 
     /// <summary>
@@ -129,7 +146,7 @@ public abstract class TuiApplication : IDisposable
         ArgumentNullException.ThrowIfNull(options);
 
         using ITuiHost ownedHost = host;
-
+        _host = ownedHost;
         _cts = new CancellationTokenSource();
 
         // ── 1. Initialize the native window ───────────────────────────────────
@@ -146,6 +163,7 @@ public abstract class TuiApplication : IDisposable
 
         // ── 3. Create the render context ──────────────────────────────────────
         using var renderCtx = new TuiRenderContext(grid, font, theme);
+        _renderCtx = renderCtx;
 
         // ── 4. Size and expose the desktop ────────────────────────────────────
         Desktop = new TuiDesktop
@@ -163,9 +181,10 @@ public abstract class TuiApplication : IDisposable
 
         // ── 6. Run the message loop ───────────────────────────────────────────
         using var queue = new TuiEventQueue();
+        _queue = queue;
 
-        var loop = new TuiMessageLoop();
-        loop.Run(
+        _loop = new TuiMessageLoop();
+        _loop.Run(
             host: ownedHost,
             queue: queue,
             desktop: Desktop,
@@ -173,6 +192,12 @@ public abstract class TuiApplication : IDisposable
             renderCtx: renderCtx,
             ct: _cts.Token,
             onCommand: OnCommand);
+
+        // ── 7. Clear session references ───────────────────────────────────────
+        _loop = null;
+        _host = null;
+        _queue = null;
+        _renderCtx = null;
     }
 
     /// <summary>
@@ -184,6 +209,80 @@ public abstract class TuiApplication : IDisposable
     /// been called yet or has already returned.
     /// </remarks>
     public void RequestQuit() => _cts?.Cancel();
+
+    /// <summary>
+    /// Opens <paramref name="dialog"/> as a modal over <paramref name="desktop"/>,
+    /// runs a nested event loop until the dialog closes, then cleans up.
+    /// </summary>
+    /// <param name="dialog">The dialog to open. Must not be <see langword="null"/>.</param>
+    /// <param name="desktop">
+    /// The desktop that will host the dialog. Must not be <see langword="null"/>.
+    /// </param>
+    /// <returns>
+    /// The <see cref="TuiCommand"/> passed to <see cref="IModalDialog.Result"/>, or
+    /// <see cref="TuiCommand.Cancel"/> if the dialog was closed without an explicit
+    /// result (e.g. host shutdown).
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="dialog"/> or <paramref name="desktop"/> is
+    /// <see langword="null"/>.
+    /// </exception>
+    /// <exception cref="ArgumentException">
+    /// Thrown when <paramref name="dialog"/> does not derive from <see cref="TuiView"/>.
+    /// </exception>
+    /// <remarks>
+    /// <b>Lifecycle managed by this method (in order):</b>
+    /// <list type="number">
+    ///   <item><description><see cref="TuiDesktop.PushModal"/> — adds the dialog to the stack and to the view tree.</description></item>
+    ///   <item><description>Nested event loop — drives the same poll → dispatch → render → present cycle.</description></item>
+    ///   <item><description><see cref="TuiDesktop.PopModal"/> — removes the dialog from the stack and from the view tree.</description></item>
+    /// </list>
+    /// The caller does not need to add or remove the dialog from the desktop manually.
+    /// <para/>
+    /// <b>Reentrancy:</b> <see cref="RunModal"/> may be called recursively (e.g. a
+    /// dialog opens a second dialog). Each call drives its own nested loop. There is
+    /// no hard limit enforced here — application code should avoid pathological
+    /// nesting depth.
+    /// <para/>
+    /// This method must only be called after <see cref="Run"/> has initialized the
+    /// host, grid and render context (i.e. from <see cref="OnInitialize"/> or from
+    /// a view's event handler during the main loop).
+    /// </remarks>
+    protected TuiCommand RunModal(IModalDialog dialog, TuiDesktop desktop)
+    {
+        ArgumentNullException.ThrowIfNull(dialog);
+        ArgumentNullException.ThrowIfNull(desktop);
+
+        if (dialog is not TuiView dialogView)
+            throw new ArgumentException(
+                "The dialog must derive from TuiView.", nameof(dialog));
+
+        // Guard: RunModal requires the application to be fully initialized.
+        if (_loop is null || _host is null || _queue is null || _renderCtx is null)
+            throw new InvalidOperationException(
+                "RunModal may only be called after Run() has initialized the application.");
+
+        desktop.PushModal(dialogView);
+        try
+        {
+            // Nested loop: drive iterations until the dialog signals close or
+            // the host shuts down. The outer CancellationToken is intentionally
+            // NOT checked here — the outer loop will handle it on its next turn.
+            while (!dialog.CloseRequested)
+            {
+                if (!_loop.RunIteration(_host, _queue, desktop, FocusManager, _renderCtx))
+                    break;
+            }
+        }
+        finally
+        {
+            // PopModal removes the dialog from the stack and the view tree
+            // regardless of how the loop exited (normal close or host shutdown).
+            desktop.PopModal();
+        }
+
+        return dialog.Result;
+    }
 
     // ── IDisposable ───────────────────────────────────────────────────────────
 
