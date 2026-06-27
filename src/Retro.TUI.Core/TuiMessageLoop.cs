@@ -459,7 +459,6 @@ internal sealed class TuiMessageLoop
                     && !_modalWasOpened)
                 {
                     _capturedView = current;
-                    System.Diagnostics.Debug.WriteLine($"CAPTURE SET: {current.GetType().Name}, _modalWasOpened={_modalWasOpened}");
                 }
 
                 return;
