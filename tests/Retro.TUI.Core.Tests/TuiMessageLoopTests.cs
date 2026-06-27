@@ -499,4 +499,149 @@ public sealed class TuiMessageLoopTests
         Assert.Equal(pixelX, loop.CursorPixelX);
         Assert.Equal(pixelY, loop.CursorPixelY);
     }
+
+    // ── Mouse capture tests ───────────────────────────────────────────────────
+
+    [Fact]
+    public void DispatchMouseEvent_ButtonDown_OnCustomMouseHandlingView_SetsCapturedView()
+    {
+        // Arrange
+        var grid = new TuiGrid();
+        var desktop = new TuiDesktop { Width = 80, Height = 25 };
+        var window = new CapturingView { Col = 0, Row = 0, Width = 30, Height = 10 };
+        desktop.Add(window);
+        var queue = new TuiEventQueue();
+        var loop = new TuiMessageLoop();
+
+        var buttonDown = new TuiMouseEvent(
+            TuiMouseAction.ButtonDown, Col: 1, Row: 1,
+            Button: TuiMouseButton.Left);
+
+        // Act
+        loop.DispatchEvents(queue, desktop, new TuiFocusManager(), grid);
+        queue.TryPost(buttonDown);
+        loop.DispatchEvents(queue, desktop, new TuiFocusManager(), grid);
+
+        // Assert
+        Assert.Equal(window, loop.CapturedView);
+    }
+
+    [Fact]
+    public void DispatchMouseEvent_Move_WhileCaptured_DeliveredToCapturedView_NotHitTarget()
+    {
+        // Arrange
+        var grid = new TuiGrid();
+        var desktop = new TuiDesktop { Width = 80, Height = 25 };
+        var window = new CapturingView { Col = 0, Row = 0, Width = 30, Height = 10 };
+        var otherView = new CapturingView { Col = 40, Row = 0, Width = 20, Height = 10 };
+        desktop.Add(window);
+        desktop.Add(otherView);
+        var queue = new TuiEventQueue();
+        var loop = new TuiMessageLoop();
+
+        // Establish capture on window via ButtonDown inside its bounds.
+        var buttonDown = new TuiMouseEvent(
+            TuiMouseAction.ButtonDown, Col: 1, Row: 1,
+            Button: TuiMouseButton.Left);
+        queue.TryPost(buttonDown);
+        loop.DispatchEvents(queue, desktop, new TuiFocusManager(), grid);
+
+        // Move cursor into otherView's territory (col 41).
+        var move = new TuiMouseEvent(
+            TuiMouseAction.Move, Col: 41, Row: 0,
+            Button: TuiMouseButton.None);
+        queue.TryPost(move);
+        loop.DispatchEvents(queue, desktop, new TuiFocusManager(), grid);
+
+        // Assert: window received the Move, otherView did not.
+        Assert.Contains(TuiMouseAction.Move, window.ReceivedActions);
+        Assert.DoesNotContain(TuiMouseAction.Move, otherView.ReceivedActions);
+    }
+
+    [Fact]
+    public void DispatchMouseEvent_ButtonUp_ReleasesCapturedView()
+    {
+        // Arrange
+        var grid = new TuiGrid();
+        var desktop = new TuiDesktop { Width = 80, Height = 25 };
+        var window = new CapturingView { Col = 0, Row = 0, Width = 30, Height = 10 };
+        desktop.Add(window);
+        var queue = new TuiEventQueue();
+        var loop = new TuiMessageLoop();
+
+        var buttonDown = new TuiMouseEvent(
+            TuiMouseAction.ButtonDown, Col: 1, Row: 1,
+            Button: TuiMouseButton.Left);
+        var buttonUp = new TuiMouseEvent(
+            TuiMouseAction.ButtonUp, Col: 1, Row: 1,
+            Button: TuiMouseButton.Left);
+
+        queue.TryPost(buttonDown);
+        loop.DispatchEvents(queue, desktop, new TuiFocusManager(), grid);
+        Assert.Equal(window, loop.CapturedView); // sanity check
+
+        // Act
+        queue.TryPost(buttonUp);
+        loop.DispatchEvents(queue, desktop, new TuiFocusManager(), grid);
+
+        // Assert
+        Assert.Null(loop.CapturedView);
+    }
+
+    [Fact]
+    public void DispatchMouseEvent_ButtonDown_NormalView_DoesNotSetCapturedView()
+    {
+        // Arrange — a plain view that consumes ButtonDown but has no custom mouse handling.
+        var grid = new TuiGrid();
+        var desktop = new TuiDesktop { Width = 80, Height = 25 };
+        var plain = new ConsumingView { Col = 0, Row = 0, Width = 30, Height = 10 };
+        desktop.Add(plain);
+        var queue = new TuiEventQueue();
+        var loop = new TuiMessageLoop();
+
+        var buttonDown = new TuiMouseEvent(
+            TuiMouseAction.ButtonDown, Col: 1, Row: 1,
+            Button: TuiMouseButton.Left);
+
+        queue.TryPost(buttonDown);
+        loop.DispatchEvents(queue, desktop, new TuiFocusManager(), grid);
+
+        // Assert: consuming ButtonDown without HasCustomMouseHandling does NOT capture.
+        Assert.Null(loop.CapturedView);
+    }
+
+    // ── Test-only view helpers ────────────────────────────────────────────────
+
+    /// <summary>
+    /// A leaf view that declares custom mouse handling, records every received
+    /// action, and always consumes mouse events.
+    /// </summary>
+    private sealed class CapturingView : TuiView
+    {
+        public List<TuiMouseAction> ReceivedActions { get; } = [];
+        public override bool HasCustomMouseHandling => true;
+
+        public override void Draw(TuiRenderContext ctx) { }
+
+        public override bool HandleEvent(TuiEvent ev)
+        {
+            if (ev is TuiMouseEvent mouse)
+            {
+                ReceivedActions.Add(mouse.Action);
+                return true;
+            }
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// A plain leaf view without custom mouse handling that always consumes
+    /// mouse events. Used to verify capture is NOT established for normal views.
+    /// </summary>
+    private sealed class ConsumingView : TuiView
+    {
+        public override bool HasCustomMouseHandling => false;
+        public override void Draw(TuiRenderContext ctx) { }
+        public override bool HandleEvent(TuiEvent ev) => ev is TuiMouseEvent;
+    }
 }

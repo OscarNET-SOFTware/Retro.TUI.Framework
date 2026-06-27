@@ -27,6 +27,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   own responsibility.
 - `SdlHost.Present`: texture was never unlocked before `RenderCopy`,
   causing a null `SKSurface` on the second frame.
+- **Mouse drag on `TuiWindow`**: moving the cursor outside the window
+  chrome during a drag no longer drops the event. `TuiMessageLoop` now
+  implements mouse capture (`_capturedView`): on `ButtonDown` over a view
+  with `HasCustomMouseHandling`, all subsequent mouse events are routed
+  directly to that view until `ButtonUp`, bypassing `FindAt` hit-testing.
 
 ### Added
 
@@ -181,7 +186,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   No-op (no redraw) when the child is already frontmost.
 - `TuiWindow.HandleEvent`: any `ButtonDown` anywhere on the window calls
   `BringToFront` on the parent before processing the specific click target.
-- 432 tests passing across all projects (0 failed).
+- 436 tests passing across all projects (0 failed).
 
 ### Changed
 

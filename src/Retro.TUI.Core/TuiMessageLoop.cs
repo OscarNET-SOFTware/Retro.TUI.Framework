@@ -94,6 +94,15 @@ internal sealed class TuiMessageLoop
     /// Exposed via <see cref="CursorPixelY"/> for testing.
     /// </remarks>
     private float _cursorPixelY;
+
+    /// <summary>
+    /// The view that has claimed exclusive mouse input via
+    /// <see cref="TuiView.HasCustomMouseHandling"/>. While non-<see langword="null"/>,
+    /// <see cref="DispatchMouseEvent"/> bypasses <c>FindAt</c> hit-testing and
+    /// delivers every mouse event directly to this view. Cleared unconditionally
+    /// on <see cref="TuiMouseAction.ButtonUp"/>.
+    /// </summary>
+    private TuiView? _capturedView;
 #pragma warning restore IDE0032
 
     /// <summary>
@@ -107,6 +116,13 @@ internal sealed class TuiMessageLoop
     /// Visible for testing via <c>InternalsVisibleTo</c>.
     /// </summary>
     internal float CursorPixelY => _cursorPixelY;
+
+    /// <summary>
+    /// Gets the view that currently holds exclusive mouse capture, or
+    /// <see langword="null"/> when no capture is active.
+    /// Visible for testing via <c>InternalsVisibleTo</c>.
+    /// </summary>
+    internal TuiView? CapturedView => _capturedView;
 
     // ── Run loop ──────────────────────────────────────────────────────────────
 
@@ -260,8 +276,7 @@ internal sealed class TuiMessageLoop
 
     /// <summary>
     /// Recomputes grid coordinates from pixel coordinates, updates the tracked
-    /// mouse-cursor pixel position, then routes the event to the deepest visible
-    /// view under the cursor and bubbles up the ancestor chain until consumed.
+    /// mouse-cursor pixel position, then routes the event to the appropriate view.
     /// </summary>
     /// <param name="mouseEvent">
     /// The raw mouse event as posted by the host. <see cref="TuiMouseEvent.Col"/>
@@ -275,15 +290,19 @@ internal sealed class TuiMessageLoop
     /// coordinates via <see cref="TuiGrid.CellCol"/> / <see cref="TuiGrid.CellRow"/>.
     /// </param>
     /// <remarks>
-    /// <see cref="TuiGroup"/> instances are skipped during the bubble phase
-    /// when <see cref="TuiView.HasCustomMouseHandling"/> is <see langword="false"/>
-    /// (the default), because their <see cref="TuiGroup.HandleEvent"/> implementation
-    /// re-dispatches downward to children — which would deliver the event a second
-    /// time to the same target that was already tried via hit-testing.
-    /// <see cref="TuiGroup"/> subclasses that override
-    /// <see cref="TuiView.HasCustomMouseHandling"/> to return <see langword="true"/>
-    /// (e.g. <c>TuiWindow</c>) are included in the bubble so they can handle
-    /// title-bar clicks, drag operations, and similar container-level gestures.
+    /// <b>Mouse capture:</b> when <see cref="_capturedView"/> is non-null, all
+    /// events are delivered directly to it — <c>FindAt</c> hit-testing is skipped
+    /// entirely. Capture is established on <see cref="TuiMouseAction.ButtonDown"/>
+    /// by walking the ancestor chain from the hit-tested target and assigning the
+    /// first ancestor whose <see cref="TuiView.HasCustomMouseHandling"/> is
+    /// <see langword="true"/>. Capture is released unconditionally on
+    /// <see cref="TuiMouseAction.ButtonUp"/>, after the event has been delivered.
+    /// <para/>
+    /// <b>Normal dispatch (no capture):</b> <c>FindAt</c> locates the deepest
+    /// visible view at the cursor position. The event then bubbles up the ancestor
+    /// chain; pure <see cref="TuiGroup"/> instances without
+    /// <see cref="TuiView.HasCustomMouseHandling"/> are skipped to avoid delivering
+    /// the event twice to the same logical target.
     /// </remarks>
     private void DispatchMouseEvent(TuiMouseEvent mouseEvent, TuiDesktop desktop, TuiGrid grid)
     {
@@ -298,7 +317,24 @@ internal sealed class TuiMessageLoop
         int row = grid.CellRow(mouseEvent.PixelY);
         TuiMouseEvent resolvedEvent = mouseEvent with { Col = col, Row = row };
 
-        // Hit-test the desktop tree to find the frontmost view at the cursor position.
+        // ── Captured-view fast path ───────────────────────────────────────────
+        // While a view holds capture, FindAt is irrelevant: every mouse event
+        // belongs to the capturing view regardless of cursor position. This is
+        // what makes drag operations work correctly when the cursor moves outside
+        // the window chrome before ButtonUp arrives.
+        if (_capturedView is not null)
+        {
+            _capturedView.HandleEvent(resolvedEvent);
+
+            // ButtonUp always releases capture, unconditionally. The captured view
+            // already received the event above and can reset its own drag state.
+            if (resolvedEvent.Action == TuiMouseAction.ButtonUp)
+                _capturedView = null;
+
+            return;
+        }
+
+        // ── Normal dispatch: hit-test + bubble ────────────────────────────────
         TuiView? target = desktop.FindAt(resolvedEvent.Col, resolvedEvent.Row);
 
         if (target is null)
@@ -320,7 +356,18 @@ internal sealed class TuiMessageLoop
             }
 
             if (current.HandleEvent(resolvedEvent))
+            {
+                // On ButtonDown, establish capture on the first ancestor with
+                // HasCustomMouseHandling. Capture is intentional and explicit:
+                // a plain button consuming ButtonDown does not imply drag intent.
+                if (resolvedEvent.Action == TuiMouseAction.ButtonDown
+                    && current.HasCustomMouseHandling)
+                {
+                    _capturedView = current;
+                }
+
                 return;
+            }
 
             current = current.Parent;
         }
