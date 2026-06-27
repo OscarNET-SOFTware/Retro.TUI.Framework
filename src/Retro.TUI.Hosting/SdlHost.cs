@@ -85,8 +85,12 @@ public sealed class SdlHost : ITuiHost
 
     // ── Host state ────────────────────────────────────────────────────────
 
+    // Plain fields: mutated directly by Initialize and HandleWindowResized.
+    // IDE0032 suppressed to avoid spurious auto-property suggestions.
+#pragma warning disable IDE0032
     private int _pixelWidth;
     private int _pixelHeight;
+#pragma warning restore IDE0032
 
     // Logical (device-independent) dimensions from TuiHostOptions.
     // Kept to restore the window size when Resizable = false and the OS
@@ -95,7 +99,9 @@ public sealed class SdlHost : ITuiHost
     private int _logicalHeight;
 
     private bool _resizable;
+#pragma warning disable IDE0032
     private float _dpiScale = 1.0f;
+#pragma warning restore IDE0032
     private string _title = string.Empty;
     private bool _initialised;
     private bool _disposed;
@@ -242,12 +248,17 @@ public sealed class SdlHost : ITuiHost
         ThrowIfNotInitialised();
         ThrowIfDisposed();
 
-        // Flush all pending Skia draw calls to the pixel buffer.
-        _surface!.Canvas.Flush();
-
         unsafe
         {
-            // Copy the texture (already unlocked after AcquireRenderSurface) to screen.
+            // Flush all pending Skia draw calls to the pixel buffer.
+            _surface!.Canvas.Flush();
+
+            // Unlock the texture so SDL2 can read the pixel buffer for display.
+            // The texture must be unlocked before RenderCopy — it was locked
+            // either by CreateTexture (first frame) or by the re-lock at the
+            // end of the previous Present call.
+            _sdl.UnlockTexture(_texture);
+
             _sdl.RenderCopy(_renderer, _texture, null, null);
             _sdl.RenderPresent(_renderer);
 
@@ -524,8 +535,8 @@ public sealed class SdlHost : ITuiHost
     {
         // SDL_KEYDOWN carries the virtual key; printable text arrives separately
         // via SDL_TEXTINPUT. Map only special (non-printable) keys here.
-        TuiKey key = SdlKeyMapper.ToTuiKey(kev.Keysym.Sym);
-        TuiModifiers mods = SdlKeyMapper.ToTuiModifiers(kev.Keysym.Mod);
+        var key = SdlKeyMapper.ToTuiKey(kev.Keysym.Sym);
+        var mods = SdlKeyMapper.ToTuiModifiers(kev.Keysym.Mod);
 
         // Emit a key event for every special key and for modifier-qualified keys
         // (e.g. Ctrl+C), but skip bare printable characters — they arrive via

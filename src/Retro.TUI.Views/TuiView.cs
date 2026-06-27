@@ -282,6 +282,10 @@ public abstract class TuiView
     /// <b>Coordinate contract:</b> draw relative to <see cref="AbsCol"/> /
     /// <see cref="AbsRow"/>. Do not assume <c>(0, 0)</c> is the view's origin.
     /// <para/>
+    /// <b>Clipping:</b> if the view paints effects outside its declared bounds
+    /// (e.g. drop shadows), it is the view's own responsibility to manage
+    /// <see cref="TuiRenderContext.PushClip"/>/<see cref="TuiRenderContext.PopClip"/>
+    /// for its interior content.
     /// <b>Do not call this method directly</b> from application code.
     /// The message loop calls it automatically. Use <see cref="Invalidate"/>
     /// to request a redraw.

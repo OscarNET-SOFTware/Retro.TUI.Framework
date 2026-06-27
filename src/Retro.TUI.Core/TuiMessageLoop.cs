@@ -120,6 +120,10 @@ internal sealed class TuiMessageLoop
     /// <param name="focusManager">The keyboard focus manager.</param>
     /// <param name="renderCtx">The render context for the current session.</param>
     /// <param name="ct">Token used to request an early exit.</param>
+    /// <param name="onCommand">
+    /// Optional callback invoked for each <see cref="TuiCommandEvent"/> before it
+    /// is forwarded to the desktop tree. Pass <see langword="null"/> to skip.
+    /// </param>
     /// <exception cref="ArgumentNullException">
     /// Thrown when any argument is <see langword="null"/>.
     /// </exception>
@@ -129,7 +133,8 @@ internal sealed class TuiMessageLoop
         TuiDesktop desktop,
         TuiFocusManager focusManager,
         TuiRenderContext renderCtx,
-        CancellationToken ct)
+        CancellationToken ct,
+        Action<TuiCommandEvent>? onCommand = null)
     {
         ArgumentNullException.ThrowIfNull(host);
         ArgumentNullException.ThrowIfNull(queue);
@@ -145,7 +150,7 @@ internal sealed class TuiMessageLoop
                 break;
 
             // ── Step 2: dispatch framework events ─────────────────────────
-            DispatchEvents(queue, desktop, focusManager, renderCtx.Grid);
+            DispatchEvents(queue, desktop, focusManager, renderCtx.Grid, onCommand);
 
             // ── Step 3: update timers (reserved for future milestone) ──────
             // UpdateTimers();
@@ -173,6 +178,10 @@ internal sealed class TuiMessageLoop
     /// <param name="desktop">The root view of the visual tree.</param>
     /// <param name="focusManager">The keyboard focus manager.</param>
     /// <param name="grid">
+    /// <param name="onCommand">
+    /// Optional callback invoked for each <see cref="TuiCommandEvent"/> before it
+    /// is forwarded to the desktop tree. Pass <see langword="null"/> to skip.
+    /// </param>
     /// The active character grid, used to recompute <see cref="TuiMouseEvent.Col"/>
     /// and <see cref="TuiMouseEvent.Row"/> from pixel coordinates.
     /// </param>
@@ -180,7 +189,8 @@ internal sealed class TuiMessageLoop
         TuiEventQueue queue,
         TuiDesktop desktop,
         TuiFocusManager focusManager,
-        TuiGrid grid)
+        TuiGrid grid,
+        Action<TuiCommandEvent>? onCommand = null)
     {
         while (queue.TryRead(out TuiEvent? ev))
         {
@@ -198,8 +208,14 @@ internal sealed class TuiMessageLoop
                     DispatchMouseEvent(mouseEvent, desktop, grid);
                     break;
 
+                case TuiCommandEvent commandEvent:
+                    // Notify the application first; then broadcast to the desktop
+                    // so the view tree can also react (e.g. close the active dialog).
+                    onCommand?.Invoke(commandEvent);
+                    desktop.HandleEvent(commandEvent);
+                    break;
+
                 default:
-                    // Command events and timer events propagate to the desktop.
                     desktop.HandleEvent(ev);
                     break;
             }

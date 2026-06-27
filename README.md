@@ -274,8 +274,8 @@ For the complete technical detail of each layer, see:
 
 - [x] ✅ `TuiWindow` with title, border and shadow
 - [ ] `TuiDialog` with modal stack
-- [ ] Window drag with mouse
-- [ ] Z-order (bring to front on click)
+- [x] Window drag with mouse
+- [x] Z-order (bring to front on click)
 
 ### Milestone 4 — Base controls (Widgets)
 `v0.4.0`

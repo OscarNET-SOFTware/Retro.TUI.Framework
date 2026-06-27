@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AssemblyTitle>Basic sample for Retro.TUI.Framework. Demonstrates TuiWindow (title bar, border, shadow, drag, z-order) on top of a PC Tools 9.x themed desktop.</AssemblyTitle>
+    <Description>$(AssemblyTitle)</Description>
+    <IsTestProject>false</IsTestProject>
+    <Title>Retro TUI — Basic Sample</Title>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Retro.TUI.Core\Retro.TUI.Core.csproj" />
+    <ProjectReference Include="..\..\src\Retro.TUI.Windows\Retro.TUI.Windows.csproj" />
+    <ProjectReference Include="..\..\themes\Retro.TUI.Theme.PcTools9\Retro.TUI.Theme.PcTools9.csproj" />
+  </ItemGroup>
+
+</Project>

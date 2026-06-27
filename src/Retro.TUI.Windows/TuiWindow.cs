@@ -295,11 +295,12 @@ public class TuiWindow : TuiGroup
     /// Must not be <see langword="null"/>.
     /// </param>
     /// <remarks>
-    /// Drawing order: drop shadow (if <see cref="ShowShadow"/>), left and bottom
+    /// Drawing order: drop shadow (if <see cref="ShowShadow"/>, painted without
+    /// clip so it extends outside the window bounds), window background fill,
     /// border via <see cref="TuiRenderContext.DrawBorder"/>, title bar (if
-    /// <see cref="ShowTitle"/>), then <see cref="TuiGroup.Draw"/> for the children.
-    /// The shadow is drawn first so that the border and title bar paint over any
-    /// overlap at the window's own edges.
+    /// <see cref="ShowTitle"/>), then children clipped to the inner area
+    /// (<see cref="InnerCol"/>, <see cref="InnerRow"/>, <see cref="InnerWidth"/>,
+    /// <see cref="InnerHeight"/>).
     /// </remarks>
     public override void Draw(TuiRenderContext ctx)
     {
@@ -308,12 +309,21 @@ public class TuiWindow : TuiGroup
         if (ShowShadow)
             ctx.DrawShadow(AbsCol, AbsRow, Width, Height);
 
+        ctx.FillRect(AbsCol, AbsRow, Width, Height, TuiColorRole.WindowBackground);
         ctx.DrawBorder(AbsCol, AbsRow, Width, Height, TuiColorRole.WindowBorder);
 
         if (ShowTitle)
             DrawTitleBar(ctx);
 
-        base.Draw(ctx);
+        ctx.PushClip(InnerCol, InnerRow, InnerWidth, InnerHeight);
+        try
+        {
+            base.Draw(ctx);
+        }
+        finally
+        {
+            ctx.PopClip();
+        }
     }
 
     // ── Private helpers ───────────────────────────────────────────────────────
@@ -350,13 +360,13 @@ public class TuiWindow : TuiGroup
         // Fill the entire title bar row first.
         ctx.FillRect(AbsCol, AbsRow, Width, 1, titleBg);
 
-        // System-menu close glyph in the leftmost cell ('-' inside its own
-        // background, matching the PC Tools 9.x "[-]" system box).
-        ctx.DrawText(AbsCol, AbsRow, "-", TuiColorRole.WindowCloseButtonForeground,
-                      TuiColorRole.WindowCloseButtonBackground);
-
         // Title text, centered over the remaining width (columns 1..Width-1).
         if (Width > 1)
             ctx.DrawTextCentered(AbsCol + 1, AbsRow, Width - 1, Title, titleFg, titleBg);
+
+        // System-menu close glyph — geometric [-] rectangle in the leftmost cell.
+        ctx.DrawSystemMenuGlyph(AbsCol, AbsRow,
+                                 TuiColorRole.WindowCloseButtonForeground,
+                                 TuiColorRole.WindowCloseButtonBackground);
     }
 }

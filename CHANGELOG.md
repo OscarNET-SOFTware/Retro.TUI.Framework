@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `PcTools9Theme`: font (`PxPlus IBM VGA 9x16`) now loads correctly via
+  `TuiTheme.Typeface` — `SKFontManager.RegisterTypeface` was removed in
+  SkiaSharp 3.x.
+- `TuiTheme`: added `SKTypeface? Typeface` property for direct typeface
+  injection, bypassing `MatchFamily` lookup.
+- `TuiApplication.ResolveTypeface`: uses `theme.Typeface` directly when
+  non-null, falls back to `MatchFamily`.
+- `TuiRenderContext.DrawShadow`: shadow offsets are now in pixels (not grid
+  cells); corner overlap removed by trimming the bottom strip width.
+- `TuiRenderContext.DrawSystemMenuGlyph`: new primitive drawing the `[-]`
+  system-menu icon as filled rectangles (no stroke), sized 16×16 px.
+- `TuiRenderContext.DrawBorder`: stroke width corrected to 1 px.
+- `TuiWindow.Draw`: window fill added; clip now applied only to the inner
+  area so drop shadows paint freely outside the window bounds.
+- `TuiGroup.Draw`: removed `PushClip`/`PopClip` — clip is now each view's
+  own responsibility.
+- `SdlHost.Present`: texture was never unlocked before `RenderCopy`,
+  causing a null `SKSurface` on the second frame.
+
 ### Added
 
 - Initial project structure and architecture documentation.

@@ -1,5 +1,7 @@
 <Solution>
-  <Folder Name="/samples/" />
+  <Folder Name="/samples/">
+    <Project Path="samples/Retro.TUI.Sample.Basic/Retro.TUI.Sample.Basic.csproj" />
+  </Folder>
   <Folder Name="/src/">
     <Project Path="src/Retro.TUI.Core/Retro.TUI.Core.csproj" />
     <Project Path="src/Retro.TUI.Events/Retro.TUI.Events.csproj" />

@@ -272,8 +272,8 @@ Para obtener información técnica completa sobre cada capa, consulta:
 
 - [x] ✅ `TuiWindow` con título, borde y sombra
 - [ ] `TuiDialog` con pila modal
-- [ ] Arrastrar la ventana con el ratón
-- [ ] Z-order (traer al frente al hacer clic)
+- [x] Arrastrar la ventana con el ratón
+- [x] Z-order (traer al frente al hacer clic)
 
 ### Milestone 4 — Controles base (Widgets)
 `v0.4.0`

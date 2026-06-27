@@ -171,7 +171,8 @@ public abstract class TuiApplication : IDisposable
             desktop: Desktop,
             focusManager: FocusManager,
             renderCtx: renderCtx,
-            ct: _cts.Token);
+            ct: _cts.Token,
+            onCommand: OnCommand);
     }
 
     /// <summary>
@@ -217,6 +218,31 @@ public abstract class TuiApplication : IDisposable
     // ── Abstract / overridable ────────────────────────────────────────────────
 
     /// <summary>
+    /// Called when a <see cref="TuiCommandEvent"/> is dispatched, before the
+    /// event is forwarded to the desktop view tree.
+    /// </summary>
+    /// <param name="ev">The command event being dispatched.</param>
+    /// <remarks>
+    /// Override this method to handle application-level commands. Always call
+    /// <c>base.OnCommand(ev)</c> unless you intentionally want to suppress the
+    /// default behaviour.
+    /// <para/>
+    /// The base implementation calls <see cref="RequestQuit"/> when
+    /// <see cref="TuiCommand.Quit"/> is received. <see cref="TuiCommand.Cancel"/>
+    /// is intentionally <em>not</em> handled by default — in PC Tools 9.x, Escape
+    /// closes the active context (dialog, menu) rather than the application.
+    /// Override and add a <c>Cancel → RequestQuit</c> path when the sample or
+    /// application requires that behaviour.
+    /// </remarks>
+    protected virtual void OnCommand(TuiCommandEvent ev)
+    {
+        ArgumentNullException.ThrowIfNull(ev);
+
+        if (ev.Command == TuiCommand.Quit)
+            RequestQuit();
+    }
+
+    /// <summary>
     /// Called once after the window, font, grid and desktop have been initialized
     /// but before the message loop starts.
     /// </summary>
@@ -236,13 +262,15 @@ public abstract class TuiApplication : IDisposable
     /// Resolves the SkiaSharp typeface for the active theme.
     /// </summary>
     /// <remarks>
-    /// Uses <c>SKFontManager.Default</c> to look up the family name declared in
-    /// <see cref="TuiTheme.FontFamily"/>. Theme packages (e.g. <c>PcTools9Theme</c>)
-    /// register their embedded font with <c>SKFontManager.Default</c> in their static
-    /// initializer, so the lookup succeeds as soon as the theme assembly is loaded.
-    /// Falls back to <c>SKTypeface.Default</c> when the family is not found.
+    /// Uses <see cref="TuiTheme.Typeface"/> directly when non-null (the preferred
+    /// path for theme packages that load fonts from embedded resources, since
+    /// <c>SKFontManager.RegisterTypeface</c> was removed in SkiaSharp 3.x).
+    /// Falls back to <c>SKFontManager.Default.MatchFamily</c> using
+    /// <see cref="TuiTheme.FontFamily"/>, and finally to
+    /// <c>SKTypeface.Default</c> when neither resolves the typeface.
     /// </remarks>
     private static SkiaSharp.SKTypeface ResolveTypeface(TuiTheme theme)
-        => SkiaSharp.SKFontManager.Default.MatchFamily(theme.FontFamily)
+        => theme.Typeface
+           ?? SkiaSharp.SKFontManager.Default.MatchFamily(theme.FontFamily)
            ?? SkiaSharp.SKTypeface.Default;
 }

@@ -297,6 +297,74 @@ public sealed class TuiRenderContext : IDisposable
         DrawText(col, row, clipped, fg, bg);
     }
 
+    // ── System-menu glyph ─────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Draws the system-menu glyph (the <c>[-]</c> icon) at the given grid cell.
+    /// </summary>
+    /// <param name="col">Grid column of the cell.</param>
+    /// <param name="row">Grid row of the cell.</param>
+    /// <param name="fg">Color role for the outer border and the dash stroke.</param>
+    /// <param name="bg">Color role for the inner fill of the glyph.</param>
+    /// <remarks>
+    /// The glyph is drawn entirely with geometric primitives — it does not rely on
+    /// any font glyph — and scales proportionally to <see cref="TuiGrid.CellWidth"/>
+    /// / <see cref="TuiGrid.CellHeight"/> so it remains correct if the font size
+    /// changes in a future theme.
+    /// <para/>
+    /// Pixel layout (reference: IBM VGA 9×16 cell):
+    /// <list type="bullet">
+    ///   <item><description>
+    ///     Outer border: 1 px stroke rectangle covering the full cell.
+    ///   </description></item>
+    ///   <item><description>
+    ///     Inner fill: <paramref name="bg"/>-colored rectangle inset by 1 px on all sides.
+    ///   </description></item>
+    ///   <item><description>
+    ///     Dash: <paramref name="fg"/>-colored filled rectangle,
+    ///     width = <c>CellWidth - 4 px</c> (2 px margin left + right),
+    ///     height ≈ <c>CellHeight × 3/16</c> (3 px at 16 px cell height),
+    ///     positioned 2 px from the left and 5 px from the top of the cell.
+    ///   </description></item>
+    /// </list>
+    /// </remarks>
+    public void DrawSystemMenuGlyph(int col, int row, TuiColorRole fg, TuiColorRole bg)
+    {
+        RequireCanvas();
+
+        float x = Grid.PixelX(col);
+        float y = Grid.PixelY(row);
+        float w = Grid.CellWidth;
+        float h = Grid.CellHeight;
+
+        SKColor fgColor = ResolveColor(fg);
+        SKColor bgColor = ResolveColor(bg);
+
+        // ── Outer border — fill full cell with fg color ───────────────────────
+        // Using a filled rect instead of a stroked rect: SKPaint strokes are
+        // centered on the path, which expands the drawn area by StrokeWidth/2
+        // on each side and produces a 10×17 px result on a 9×16 cell.
+        _fillPaint.Color = fgColor;
+        _canvas!.DrawRect(new SKRect(x, y, x + h, y + h), _fillPaint);
+
+        // ── Inner fill (bg color, inset 1 px on each side) ───────────────────
+        _fillPaint.Color = bgColor;
+        _canvas.DrawRect(new SKRect(x + 1f, y + 1f, x + h - 1f, y + h - 1f),
+                         _fillPaint);
+
+        // ── Dash (fg color, fixed pixel offsets within 16×16 glyph) ──────────────
+        // Left=3px, top=6px, width=CellHeight-6px (10px at 16px), height=3px.
+        float dashX = x + 3f;
+        float dashY = y + 6f;
+        float dashWidth = h - 6f;
+        float dashHeight = 3f;
+
+        _fillPaint.Color = fgColor;
+        _canvas.DrawRect(new SKRect(dashX, dashY,
+                                    dashX + dashWidth, dashY + dashHeight),
+                         _fillPaint);
+    }
+
     // ── Borders ───────────────────────────────────────────────────────────────
 
     /// <summary>
@@ -319,7 +387,7 @@ public sealed class TuiRenderContext : IDisposable
     {
         RequireCanvas();
 
-        const float StrokeWidth = 2f;
+        const float StrokeWidth = 1f;
 
         using var paint = new SKPaint
         {
@@ -338,7 +406,9 @@ public sealed class TuiRenderContext : IDisposable
         _canvas!.DrawLine(x0, y0, x0, y1, paint);
 
         // Bottom edge — horizontal line, full window width.
-        _canvas.DrawLine(x0, y1, x1, y1, paint);
+        // Use y1-1 so the 2px stroke renders fully within the clipped area
+        // instead of being cut at the pixel boundary.
+        _canvas.DrawLine(x0, y1 - 1f, x1, y1 - 1f, paint);
     }
 
     // ── Shadow ────────────────────────────────────────────────────────────────
@@ -361,25 +431,23 @@ public sealed class TuiRenderContext : IDisposable
         byte alpha = (byte)(255 * Math.Clamp(Theme.ShadowOpacity, 0f, 1f));
         SKColor shadowColor = baseColor.WithAlpha(alpha);
 
-        int sx = col + Theme.ShadowOffsetX;
-        int sy = row + Theme.ShadowOffsetY;
+        // Convert element bounds to pixels.
+        float px = Grid.PixelX(col);
+        float py = Grid.PixelY(row);
+        float pw = width * Grid.CellWidth;
+        float ph = height * Grid.CellHeight;
 
-        // Bottom strip
+        // Shadow offsets are in pixels (not grid cells).
+        float ox = Theme.ShadowOffsetX;
+        float oy = Theme.ShadowOffsetY;
+
         _fillPaint.Color = shadowColor;
-        _canvas!.DrawRect(
-            Grid.PixelX(sx),
-            Grid.PixelY(sy + height - Theme.ShadowOffsetY),
-            width * Grid.CellWidth,
-            Theme.ShadowOffsetY * Grid.CellHeight,
-            _fillPaint);
 
-        // Right strip
-        _canvas.DrawRect(
-            Grid.PixelX(sx + width - Theme.ShadowOffsetX),
-            Grid.PixelY(sy),
-            Theme.ShadowOffsetX * Grid.CellWidth,
-            height * Grid.CellHeight,
-            _fillPaint);
+        // Right strip — full height
+        _canvas!.DrawRect(px + pw, py + oy, ox, ph, _fillPaint);
+
+        // Bottom strip — starts after the shadow offset to avoid corner overlap
+        _canvas.DrawRect(px + ox, py + ph, pw - ox, oy, _fillPaint);
     }
 
     // ── Desktop pattern ───────────────────────────────────────────────────────

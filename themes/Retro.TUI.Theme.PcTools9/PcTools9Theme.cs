@@ -139,10 +139,17 @@ public static class PcTools9Theme
                 $"Ensure 'Fonts/PxPlus_IBM_VGA_9x16.ttf' exists in the theme project " +
                 $"and is declared as EmbeddedResource with the correct LogicalName.");
 
-        return SKTypeface.FromStream(stream)
+        SKTypeface typeface = SKTypeface.FromStream(stream)
             ?? throw new InvalidOperationException(
                 $"SkiaSharp could not load a typeface from resource '{FontResourceName}'. " +
                 $"Verify that the file is a valid TrueType font.");
+
+        // Note: SKFontManager.Default.RegisterTypeface was removed in SkiaSharp 3.x.
+        // The typeface is stored in the static Typeface property and passed directly
+        // to TuiTheme.Typeface so TuiApplication.ResolveTypeface can use it without
+        // going through MatchFamily.
+
+        return typeface;
     }
 
     // ── Private: theme builder ────────────────────────────────────────────────
@@ -264,9 +271,10 @@ public static class PcTools9Theme
             DesktopPattern = TuiDesktopPattern.None,
             FontFamily = FontFamilyName,
             FontSize = 16f,
-            ShadowOpacity = 1.0f,
-            ShadowOffsetX = 2,
-            ShadowOffsetY = 1,
+            Typeface = Typeface,
+            ShadowOpacity = 0.65f,
+            ShadowOffsetX = 8,
+            ShadowOffsetY = 7,
         };
     }
 }

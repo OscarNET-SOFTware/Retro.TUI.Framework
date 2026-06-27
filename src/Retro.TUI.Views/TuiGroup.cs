@@ -178,10 +178,9 @@ public class TuiGroup : TuiView
     /// Must not be <see langword="null"/>.
     /// </param>
     /// <remarks>
-    /// Each child is drawn inside a clip rectangle that matches its own bounds,
-    /// preventing it from painting outside its declared area. The clip is pushed
-    /// before calling the child's <see cref="TuiView.Draw"/> and popped immediately
-    /// after, so the stack is always balanced even if <c>Draw</c> throws.
+    /// Each child is responsible for its own clipping. This method iterates
+    /// children back-to-front and calls <see cref="TuiView.Draw"/> on each
+    /// visible child without pushing any clip rectangle.
     /// </remarks>
     public override void Draw(TuiRenderContext ctx)
     {
@@ -192,16 +191,8 @@ public class TuiGroup : TuiView
             if (!child.Visible)
                 continue;
 
-            ctx.PushClip(child.AbsCol, child.AbsRow, child.Width, child.Height);
-            try
-            {
-                child.Draw(ctx);
-                child.ClearDirty();
-            }
-            finally
-            {
-                ctx.PopClip();
-            }
+            child.Draw(ctx);
+            child.ClearDirty();
         }
     }
 

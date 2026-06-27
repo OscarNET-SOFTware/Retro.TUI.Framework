@@ -159,6 +159,6 @@ public sealed class PcTools9ThemeTests
     [Fact]
     public void Instance_ShadowOpacity_Is1()
     {
-        Assert.Equal(1.0f, PcTools9Theme.Instance.ShadowOpacity);
+        Assert.Equal(0.65f, PcTools9Theme.Instance.ShadowOpacity);
     }
 }
