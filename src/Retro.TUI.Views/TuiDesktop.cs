@@ -13,6 +13,7 @@
 // </copyright>
 // ---------------------------------------------------------------------------------------------------------------------
 
+using Retro.TUI.Events;
 using Retro.TUI.Rendering;
 
 namespace Retro.TUI.Views;
@@ -55,6 +56,25 @@ public sealed class TuiDesktop : TuiGroup
     /// Gets the topmost modal view, or <see langword="null"/> when no modal is active.
     /// </summary>
     public TuiView? ActiveModal => _modalStack.Count > 0 ? _modalStack.Peek() : null;
+
+    // ── Command sink ──────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Gets or sets the callback invoked when a <see cref="TuiCommandEvent"/>
+    /// bubbles up through the entire view tree without being consumed by any child.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="TuiDesktop"/> is the natural boundary between the view tree and
+    /// the application layer. A command that no child handles reaches this point
+    /// and is forwarded here so the application can react without any downward
+    /// coupling to the event queue or the message loop.
+    /// <para>
+    /// Assigned by <c>TuiApplication.Run</c> before <c>OnInitialize</c> is called,
+    /// so views added during initialization can already emit commands that reach
+    /// the application.
+    /// </para>
+    /// </remarks>
+    public Action<TuiCommandEvent>? CommandSink { get; set; }
 
     /// <summary>
     /// Pushes <paramref name="modal"/> onto the modal stack and adds it as a child
@@ -113,5 +133,30 @@ public sealed class TuiDesktop : TuiGroup
 
         // Draw all children on top of the background.
         base.Draw(ctx);
+    }
+
+    /// <summary>
+    /// Dispatches the event to children; if the event is a
+    /// <see cref="TuiCommandEvent"/> that no child consumed, forwards it to
+    /// <see cref="CommandSink"/>.
+    /// </summary>
+    /// <param name="ev">The event to dispatch.</param>
+    /// <returns>
+    /// <see langword="true"/> if a child or the <see cref="CommandSink"/> consumed
+    /// the event; <see langword="false"/> otherwise.
+    /// </returns>
+    public override bool HandleEvent(TuiEvent ev)
+    {
+        ArgumentNullException.ThrowIfNull(ev);
+
+        bool consumed = base.HandleEvent(ev);
+
+        if (!consumed && ev is TuiCommandEvent commandEvent && CommandSink is not null)
+        {
+            CommandSink(commandEvent);
+            return true;
+        }
+
+        return consumed;
     }
 }

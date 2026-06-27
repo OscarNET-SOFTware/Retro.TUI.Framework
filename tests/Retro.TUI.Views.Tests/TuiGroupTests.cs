@@ -379,4 +379,63 @@ public sealed class TuiGroupTests
         Assert.False(consumed);
         Assert.Null(disabled.LastEvent);
     }
+
+    // ── Frontmost ─────────────────────────────────────────────────────────────
+
+    [Fact]
+    public void Frontmost_EmptyGroup_ReturnsNull()
+    {
+        var group = new TuiGroup();
+        Assert.Null(group.Frontmost);
+    }
+
+    [Fact]
+    public void Frontmost_SingleChild_ReturnsThatChild()
+    {
+        var group = new TuiGroup();
+        var child = new StubView();
+        group.Add(child);
+
+        Assert.Same(child, group.Frontmost);
+    }
+
+    [Fact]
+    public void Frontmost_MultipleChildren_ReturnsLastAdded()
+    {
+        var group = new TuiGroup();
+        var first = new StubView();
+        var second = new StubView();
+        group.Add(first);
+        group.Add(second);
+
+        Assert.Same(second, group.Frontmost);
+    }
+
+    [Fact]
+    public void Frontmost_AfterBringToFront_ReturnsPromotedChild()
+    {
+        var group = new TuiGroup();
+        var first = new StubView();
+        var second = new StubView();
+        group.Add(first);
+        group.Add(second);
+
+        group.BringToFront(first);
+
+        Assert.Same(first, group.Frontmost);
+    }
+
+    [Fact]
+    public void Frontmost_AfterRemoveFrontmost_ReturnsPreviousChild()
+    {
+        var group = new TuiGroup();
+        var first = new StubView();
+        var second = new StubView();
+        group.Add(first);
+        group.Add(second);
+
+        group.Remove(second);
+
+        Assert.Same(first, group.Frontmost);
+    }
 }

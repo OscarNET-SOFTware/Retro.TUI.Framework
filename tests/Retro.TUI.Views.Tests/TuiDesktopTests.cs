@@ -13,6 +13,7 @@
 // </copyright>
 // ---------------------------------------------------------------------------------------------------------------------
 
+using Retro.TUI.Events;
 using Retro.TUI.Rendering;
 using Retro.TUI.Theming;
 
@@ -261,5 +262,60 @@ public sealed class TuiDesktopTests
 
         using var ctx = new TuiRenderContext(grid, font, theme);
         ctx.RenderFrame(surface, _ => desktop.Draw(ctx));
+    }
+
+    // ── CommandSink ───────────────────────────────────────────────────────────
+
+    [Fact]
+    public void CommandSink_DefaultValue_IsNull()
+    {
+        var desktop = new TuiDesktop { Width = 80, Height = 25 };
+        Assert.Null(desktop.CommandSink);
+    }
+
+    [Fact]
+    public void HandleEvent_CommandNotConsumedByChildren_InvokesCommandSink()
+    {
+        var desktop = new TuiDesktop { Width = 80, Height = 25 };
+        TuiCommandEvent? received = null;
+        desktop.CommandSink = ev => received = ev;
+
+        var cmd = new TuiCommandEvent(TuiCommand.Close);
+        desktop.HandleEvent(cmd);
+
+        Assert.NotNull(received);
+        Assert.Equal(TuiCommand.Close, received.Command);
+    }
+
+    [Fact]
+    public void HandleEvent_CommandConsumedByChild_CommandSinkNotInvoked()
+    {
+        var desktop = new TuiDesktop { Width = 80, Height = 25 };
+        var consumer = new CommandConsumingView { Col = 0, Row = 0, Width = 10, Height = 5 };
+        desktop.Add(consumer);
+
+        bool sinkInvoked = false;
+        desktop.CommandSink = _ => sinkInvoked = true;
+
+        desktop.HandleEvent(new TuiCommandEvent(TuiCommand.Close));
+
+        Assert.False(sinkInvoked);
+    }
+
+    [Fact]
+    public void HandleEvent_NoCommandSink_DoesNotThrow()
+    {
+        var desktop = new TuiDesktop { Width = 80, Height = 25 };
+        var ex = Record.Exception(() =>
+            desktop.HandleEvent(new TuiCommandEvent(TuiCommand.Close)));
+        Assert.Null(ex);
+    }
+
+    // ── CommandConsumingView helper ───────────────────────────────────────────
+
+    private sealed class CommandConsumingView : TuiView
+    {
+        public override void Draw(TuiRenderContext ctx) { }
+        public override bool HandleEvent(TuiEvent ev) => ev is TuiCommandEvent;
     }
 }

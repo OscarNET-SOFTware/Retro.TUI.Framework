@@ -151,23 +151,22 @@ public sealed class TuiMessageLoopTests
     // ── Escape → Cancel command ───────────────────────────────────────────────
 
     [Fact]
-    public void DispatchEvents_Escape_PostsCancelCommandToDesktop()
+    public void DispatchEvents_Escape_PostsCancelCommandToOnCommand()
     {
         var fm = new TuiFocusManager();
         var desktop = new TuiDesktop();
         var grid = BuildGrid(80, 25);
         var loop = new TuiMessageLoop();
-        var handler = new RecordingView { Width = 80, Height = 25 };
-        desktop.Add(handler);
+
+        TuiCommandEvent? received = null;
 
         using var queue = QueueWith(
             new TuiKeyEvent(TuiKey.Escape, '\0', TuiModifiers.None));
 
-        loop.DispatchEvents(queue, desktop, fm, grid);
+        loop.DispatchEvents(queue, desktop, fm, grid, ev => received = ev);
 
-        Assert.Single(handler.ReceivedEvents);
-        var cmdEvent = Assert.IsType<TuiCommandEvent>(handler.ReceivedEvents[0]);
-        Assert.Equal(TuiCommand.Cancel, cmdEvent.Command);
+        Assert.NotNull(received);
+        Assert.Equal(TuiCommand.Cancel, received.Command);
     }
 
     // ── Keyboard → focused view ───────────────────────────────────────────────

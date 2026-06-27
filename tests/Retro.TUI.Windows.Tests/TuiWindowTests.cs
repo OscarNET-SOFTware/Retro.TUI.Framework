@@ -383,15 +383,15 @@ public sealed class TuiWindowTests
         var window = new TuiWindow("Hello", col: 5, row: 3, width: 20, height: 10);
         desktop.Add(window);
 
-        // Begin drag at title bar (offset 1 from Col).
-        window.HandleEvent(new TuiMouseEvent(TuiMouseAction.ButtonDown, Col: 6, Row: 3,
+        // Begin drag at title bar (col=7, offset = 7-5 = 2).
+        window.HandleEvent(new TuiMouseEvent(TuiMouseAction.ButtonDown, Col: 7, Row: 3,
                                               TuiMouseButton.Left));
 
-        // Move to absolute col=10, row=5 → newCol = 10-1=9, newRow = 5-0=5.
+        // Move to absolute col=10, row=5 → newCol = 10-2=8, newRow = 5-0=5.
         window.HandleEvent(new TuiMouseEvent(TuiMouseAction.Move, Col: 10, Row: 5,
                                               TuiMouseButton.None));
 
-        Assert.Equal(9, window.Col);
+        Assert.Equal(8, window.Col);
         Assert.Equal(5, window.Row);
     }
 
@@ -402,11 +402,11 @@ public sealed class TuiWindowTests
         var window = new TuiWindow("Hello", col: 5, row: 3, width: 20, height: 10);
         desktop.Add(window);
 
-        // col=6 avoids the [-] glyph at col=5; offset = 6-5 = 1.
-        window.HandleEvent(new TuiMouseEvent(TuiMouseAction.ButtonDown, Col: 6, Row: 3,
+        // col=7 avoids the [-] glyph at cols 5 and 6; offset = 7-5 = 2.
+        window.HandleEvent(new TuiMouseEvent(TuiMouseAction.ButtonDown, Col: 7, Row: 3,
                                               TuiMouseButton.Left));
 
-        // Try to move way off the right edge: newCol = 999-1 = 998.
+        // Try to move way off the right edge: newCol = 999-2 = 997.
         window.HandleEvent(new TuiMouseEvent(TuiMouseAction.Move, Col: 999, Row: 3,
                                               TuiMouseButton.None));
 
@@ -421,11 +421,11 @@ public sealed class TuiWindowTests
         var window = new TuiWindow("Hello", col: 5, row: 3, width: 20, height: 10);
         desktop.Add(window);
 
-        // col=6 avoids the [-] glyph at col=5; offset = 6-5 = 1.
-        window.HandleEvent(new TuiMouseEvent(TuiMouseAction.ButtonDown, Col: 6, Row: 3,
+        // col=7 avoids the [-] glyph at cols 5 and 6; offset = 7-5 = 2.
+        window.HandleEvent(new TuiMouseEvent(TuiMouseAction.ButtonDown, Col: 7, Row: 3,
                                               TuiMouseButton.Left));
 
-        // Try to move off the left edge: newCol = -99-1 = -100.
+        // Try to move off the left edge: newCol = -99-2 = -101.
         window.HandleEvent(new TuiMouseEvent(TuiMouseAction.Move, Col: -99, Row: 3,
                                               TuiMouseButton.None));
 

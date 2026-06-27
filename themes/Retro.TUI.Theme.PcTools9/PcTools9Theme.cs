@@ -57,6 +57,12 @@ public static class PcTools9Theme
     public static readonly SKColor EgaBrightBlue = new(0x55, 0x55, 0xFF);
 
     /// <summary>
+    /// EGA Bright Cyan — standard EGA color #11 (0x55, 0xFF, 0xFF).
+    /// Used for dialog backgrounds.
+    /// </summary>
+    public static readonly SKColor EgaBrightCyan = new(0x55, 0xFF, 0xFF);
+
+    /// <summary>
     /// Medium gray. Custom PC Tools value — not a standard EGA color.
     /// Used for the desktop background, status bar and scroll bar thumb.
     /// </summary>
@@ -180,7 +186,7 @@ public static class PcTools9Theme
             [TuiColorRole.WindowShadow] = Black,
 
             // ── Dialog ────────────────────────────────────────────────────
-            [TuiColorRole.DialogBackground] = EgaBrightBlue,
+            [TuiColorRole.DialogBackground] = EgaBrightCyan,
             [TuiColorRole.DialogForeground] = White,
             [TuiColorRole.DialogBorder] = Black,
             [TuiColorRole.DialogTitleBackground] = White,

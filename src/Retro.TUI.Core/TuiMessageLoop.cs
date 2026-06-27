@@ -69,9 +69,9 @@ internal sealed class TuiMessageLoop
 {
     // ── State ─────────────────────────────────────────────────────────────────
 
-    // _cursorPixelX/_cursorPixelY are plain fields updated on every mouse event by
-    // DispatchMouseEvent and read each frame by Run(). IDE0032 suppressed to avoid
-    // a spurious auto-property suggestion on fields with non-trivial write paths.
+    // _cursorPixelX/_cursorPixelY/_capturedView are plain fields updated on every
+    // mouse event by DispatchMouseEvent. IDE0032 suppressed to avoid a spurious
+    // auto-property suggestion on fields with non-trivial write paths.
 #pragma warning disable IDE0032
     /// <summary>
     /// Last known horizontal position of the mouse pointer, in screen pixels.
@@ -106,6 +106,30 @@ internal sealed class TuiMessageLoop
 #pragma warning restore IDE0032
 
     /// <summary>
+    /// Set to <see langword="true"/> while a nested modal loop is running.
+    /// Used by <see cref="RunIteration"/> to suppress the clearing of
+    /// <see cref="_modalWasOpened"/> so the flag survives until the bubble
+    /// loop in <see cref="DispatchMouseEvent"/> reads it after
+    /// <see cref="TuiView.HandleEvent"/> returns.
+    /// </summary>
+    private bool _inNestedLoop;
+
+    /// <summary>
+    /// Set to <see langword="true"/> by <see cref="BeginModal"/> when
+    /// <c>TuiApplication.RunModal</c> opens a nested loop during the current
+    /// dispatch cycle. Cleared at the start of each <see cref="DispatchEvents"/>
+    /// call so it never leaks across iterations.
+    /// <para/>
+    /// Used by <see cref="DispatchMouseEvent"/> to prevent establishing mouse
+    /// capture after a modal was opened synchronously inside
+    /// <see cref="TuiView.HandleEvent"/> — the corresponding ButtonUp will be
+    /// routed to the modal and never reach the captured view.
+    /// </summary>
+    private bool _modalWasOpened;
+
+    // ── Internal state accessors (for testing) ────────────────────────────────
+
+    /// <summary>
     /// Gets the last known horizontal pixel position of the mouse pointer.
     /// Visible for testing via <c>InternalsVisibleTo</c>.
     /// </summary>
@@ -123,6 +147,28 @@ internal sealed class TuiMessageLoop
     /// Visible for testing via <c>InternalsVisibleTo</c>.
     /// </summary>
     internal TuiView? CapturedView => _capturedView;
+
+    /// <summary>
+    /// Signals that a nested modal loop is starting.
+    /// Sets <see cref="_modalWasOpened"/> so the bubble loop will not establish
+    /// mouse capture, and sets <see cref="_inNestedLoop"/> so
+    /// <see cref="RunIteration"/> does not clear the flag during nested iterations.
+    /// </summary>
+    internal void BeginModal()
+    {
+        _modalWasOpened = true;
+        _inNestedLoop = true;
+    }
+
+    /// <summary>
+    /// Signals that the nested modal loop has exited.
+    /// Clears <see cref="_inNestedLoop"/> so the outer <see cref="RunIteration"/>
+    /// resumes clearing <see cref="_modalWasOpened"/> on the next iteration.
+    /// Called from <c>TuiApplication.RunModal</c> in the <c>finally</c> block
+    /// before <c>PopModal</c> — <see cref="_modalWasOpened"/> remains
+    /// <see langword="true"/> here so the bubble loop can still read it.
+    /// </summary>
+    internal void EndModal() => _inNestedLoop = false;
 
     // ── Run loop ──────────────────────────────────────────────────────────────
 
@@ -204,7 +250,7 @@ internal sealed class TuiMessageLoop
             switch (ev)
             {
                 case TuiKeyEvent keyEvent:
-                    DispatchKeyEvent(keyEvent, desktop, focusManager);
+                    DispatchKeyEvent(keyEvent, desktop, focusManager, onCommand);
                     break;
 
                 case TuiMouseEvent mouseEvent:
@@ -215,9 +261,16 @@ internal sealed class TuiMessageLoop
                     // While a modal is active, commands go only to the modal.
                     // The outer onCommand callback is intentionally suppressed.
                     if (desktop.HasModal)
+                    {
                         desktop.ActiveModal?.HandleEvent(commandEvent);
+                    }
                     else
                     {
+                        // Commands posted to the queue (e.g. from the host) are
+                        // delivered via onCommand first, then to the desktop tree.
+                        // Commands emitted from within the tree (e.g. TuiWindow [-])
+                        // reach the application via Desktop.CommandSink instead —
+                        // they never enter the queue and are not processed here.
                         onCommand?.Invoke(commandEvent);
                         desktop.HandleEvent(commandEvent);
                     }
@@ -237,7 +290,12 @@ internal sealed class TuiMessageLoop
     ///   <item><description>Shift+Tab → <see cref="TuiFocusManager.FocusPrevious"/></description></item>
     ///   <item><description>
     ///     Escape → <see cref="TuiCommand.Cancel"/> to the active modal when
-    ///     <see cref="TuiDesktop.HasModal"/>; otherwise to the desktop.
+    ///     <see cref="TuiDesktop.HasModal"/>; otherwise posted via
+    ///     <paramref name="onCommand"/> so the application handles it directly.
+    ///   </description></item>
+    ///   <item><description>
+    ///     Enter → delivered to the active modal when <see cref="TuiDesktop.HasModal"/>;
+    ///     otherwise routed to the focused view via <see cref="TuiFocusManager.Current"/>.
     ///   </description></item>
     ///   <item><description>All other keys → focused view via <see cref="TuiFocusManager.Current"/></description></item>
     /// </list>
@@ -245,7 +303,8 @@ internal sealed class TuiMessageLoop
     private static void DispatchKeyEvent(
         TuiKeyEvent keyEvent,
         TuiDesktop desktop,
-        TuiFocusManager focusManager)
+        TuiFocusManager focusManager,
+        Action<TuiCommandEvent>? onCommand)
     {
         if (keyEvent.Key == TuiKey.Tab)
         {
@@ -257,17 +316,27 @@ internal sealed class TuiMessageLoop
             return;
         }
 
+        // Escape — with modal: goes only to the modal.
+        // Without modal: goes to onCommand (application), NOT desktop.HandleEvent.
+        // Cancel is an application-level command; the desktop tree has nothing to do with it.
         if (keyEvent.Key == TuiKey.Escape)
         {
             var cancelCmd = new TuiCommandEvent(TuiCommand.Cancel);
 
-            // When a modal is active, Escape goes only to the modal — the
-            // application's OnCommand never sees it.
             if (desktop.HasModal)
                 desktop.ActiveModal?.HandleEvent(cancelCmd);
             else
-                desktop.HandleEvent(cancelCmd);
+                onCommand?.Invoke(cancelCmd);
 
+            return;
+        }
+
+        // When a modal is active, all non-Tab/Escape keys go directly to it.
+        // focusManager.Current may be null (no focusable controls registered yet),
+        // so bypassing it is required for the modal to receive Enter and other keys.
+        if (desktop.HasModal)
+        {
+            desktop.ActiveModal?.HandleEvent(keyEvent);
             return;
         }
 
@@ -320,8 +389,15 @@ internal sealed class TuiMessageLoop
         // ── Modal fast path ───────────────────────────────────────────────────
         // When a modal is active, all mouse events go exclusively to it.
         // FindAt and the normal bubble are bypassed entirely.
+        // On ButtonUp, also clear any stale _capturedView: the ButtonUp that
+        // corresponds to the ButtonDown that triggered RunModal will never reach
+        // the captured view — the nested loop routes everything to the modal.
+        // Without this reset on ButtonUp, _capturedView remains orphaned.
         if (desktop.HasModal)
         {
+            if (resolvedEvent.Action == TuiMouseAction.ButtonUp)
+                _capturedView = null;
+
             desktop.ActiveModal?.HandleEvent(resolvedEvent);
             return;
         }
@@ -369,10 +445,21 @@ internal sealed class TuiMessageLoop
                 // On ButtonDown, establish capture on the first ancestor with
                 // HasCustomMouseHandling. Capture is intentional and explicit:
                 // a plain button consuming ButtonDown does not imply drag intent.
+                //
+                // Guard: do NOT capture if a modal was opened during HandleEvent.
+                // RunModal is synchronous — it can be called from inside HandleEvent
+                // (e.g. TuiWindow [-] → CommandSink → RunModal), opening and closing
+                // a modal before HandleEvent returns. By the time we reach this line
+                // HasModal is already false. _modalWasOpened is set by BeginModal()
+                // at the start of RunModal and cleared at the next DispatchEvents
+                // call — it remains true here if a modal was opened and closed
+                // during this HandleEvent call, preventing orphaned capture.
                 if (resolvedEvent.Action == TuiMouseAction.ButtonDown
-                    && current.HasCustomMouseHandling)
+                    && current.HasCustomMouseHandling
+                    && !_modalWasOpened)
                 {
                     _capturedView = current;
+                    System.Diagnostics.Debug.WriteLine($"CAPTURE SET: {current.GetType().Name}, _modalWasOpened={_modalWasOpened}");
                 }
 
                 return;
@@ -416,6 +503,16 @@ internal sealed class TuiMessageLoop
         bool keepRunning = host.PollEvents(queue);
         if (!keepRunning)
             return false;
+
+        // Clear _modalWasOpened only in the outer loop — not while a nested modal
+        // loop is running. The flag is set by BeginModal() when RunModal opens a
+        // dialog synchronously from inside HandleEvent. It must survive until the
+        // bubble loop in DispatchMouseEvent reads it after HandleEvent returns.
+        // _inNestedLoop prevents nested DispatchEvents calls from clearing it
+        // prematurely; EndModal() clears _inNestedLoop before RunModal returns,
+        // so the outer RunIteration resumes clearing on the next iteration.
+        if (!_inNestedLoop)
+            _modalWasOpened = false;
 
         DispatchEvents(queue, desktop, focusManager, renderCtx.Grid, onCommand);
 

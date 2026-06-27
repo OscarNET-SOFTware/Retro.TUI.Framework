@@ -76,7 +76,7 @@ public sealed class PcTools9ThemeTests
     [InlineData(TuiColorRole.WindowTitleInactiveBackground, 0xCA, 0xCA, 0xCA)] // PcToolsLightGray
     [InlineData(TuiColorRole.WindowTitleInactiveForeground, 0x69, 0x69, 0x69)] // PcToolsGray
     [InlineData(TuiColorRole.WindowShadow, 0x00, 0x00, 0x00)] // Black
-    [InlineData(TuiColorRole.DialogBackground, 0x55, 0x55, 0xFF)] // EgaBrightBlue
+    [InlineData(TuiColorRole.DialogBackground, 0x55, 0xFF, 0xFF)] // EgaBrightCyan
     [InlineData(TuiColorRole.DialogTitleBackground, 0xFF, 0xFF, 0xFF)] // White
     [InlineData(TuiColorRole.DialogTitleWarningBackground, 0xFF, 0x55, 0x55)] // EgaBrightRed
     [InlineData(TuiColorRole.DialogHighlightForeground, 0xFF, 0xFF, 0x55)] // EgaBrightYellow

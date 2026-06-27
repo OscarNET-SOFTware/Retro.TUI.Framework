@@ -34,6 +34,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   directly to that view until `ButtonUp`, bypassing `FindAt` hit-testing.
 - **Tech debt (M2):** `TuiDesktop.Draw()` now has test coverage —
   empty desktop, desktop with child, and desktop with active modal.
+- **`TuiWindow`**: system-menu glyph `[-]` now uses `WindowTitleInactiveBackground`
+  and `WindowBorder` when the window is inactive, matching PC Tools 9.x style.
 
 ### Added
 

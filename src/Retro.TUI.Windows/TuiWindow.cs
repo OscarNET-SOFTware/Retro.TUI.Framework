@@ -231,17 +231,14 @@ public class TuiWindow : TuiGroup
         }
 
         // ── Close button ([-]) ────────────────────────────────────────────────
-        // Must be checked before drag: ButtonDown on AbsCol,AbsRow is consumed
-        // here and never reaches the drag logic below.
+        // The glyph is drawn as a 16×16 px square (CellHeight × CellHeight) which
+        // overflows ~7 px into AbsCol+1 on a 9 px wide cell. Both cells are included
+        // in the hit-test so the entire visible glyph is clickable.
         if (mouse.Action == TuiMouseAction.ButtonDown
             && ShowTitle
-            && mouse.Col == AbsCol
+            && (mouse.Col == AbsCol || mouse.Col == AbsCol + 1)
             && mouse.Row == AbsRow)
         {
-            // Emit Close up the ancestor chain so any registered handler can act.
-            // The actual removal of this window from the desktop is the
-            // consumer's responsibility — wired in M3 step 3.5 / 3.6 when
-            // TuiDialog modal stack is introduced.
             Parent?.HandleEvent(new TuiCommandEvent(TuiCommand.Close));
             return true;
         }
@@ -250,7 +247,9 @@ public class TuiWindow : TuiGroup
         if (mouse.Action == TuiMouseAction.ButtonDown
             && Movable
             && ShowTitle
-            && mouse.Row == AbsRow)
+            && mouse.Row == AbsRow
+            && mouse.Col != AbsCol
+            && mouse.Col != AbsCol + 1)
         {
             _isDragging = true;
             _dragOffsetCol = mouse.Col - Col;
@@ -318,7 +317,7 @@ public class TuiWindow : TuiGroup
         ctx.PushClip(InnerCol, InnerRow, InnerWidth, InnerHeight);
         try
         {
-            base.Draw(ctx);
+            DrawChildViews(ctx);
         }
         finally
         {
@@ -329,24 +328,14 @@ public class TuiWindow : TuiGroup
     // ── Private helpers ───────────────────────────────────────────────────────
 
     /// <summary>
-    /// Draws row 0: the system-menu close glyph in the leftmost cell, followed by
-    /// the title text centered over the remaining width.
+    /// Draws the title bar row. Override in subclasses to use different
+    /// color roles (e.g. <see cref="TuiDialog"/> uses <c>Dialog*</c> roles).
     /// </summary>
-    /// <remarks>
-    /// Colors are selected based on <see cref="IsActive"/>: active windows use
-    /// <see cref="TuiColorRole.WindowTitleBackground"/> /
-    /// <see cref="TuiColorRole.WindowTitleForeground"/>; inactive windows use
-    /// <see cref="TuiColorRole.WindowTitleInactiveBackground"/> /
-    /// <see cref="TuiColorRole.WindowTitleInactiveForeground"/>.
-    /// <para/>
-    /// TODO (M3/M4): the close glyph is drawn here but does not yet respond to
-    /// clicks — see the <c>HandleEvent</c> override introduced alongside
-    /// <c>HasCustomMouseHandling</c>, which will dispatch
-    /// <see cref="Retro.TUI.Events.TuiCommandEvent"/> with
-    /// <see cref="Retro.TUI.Events.TuiCommand.Close"/> when the glyph is clicked.
-    /// </remarks>
-    private void DrawTitleBar(TuiRenderContext ctx)
+    /// <param name="ctx">The active render context.</param>
+    protected virtual void DrawTitleBar(TuiRenderContext ctx)
     {
+        ArgumentNullException.ThrowIfNull(ctx);
+
         bool active = IsActive;
 
         TuiColorRole titleBg = active
@@ -364,9 +353,18 @@ public class TuiWindow : TuiGroup
         if (Width > 1)
             ctx.DrawTextCentered(AbsCol + 1, AbsRow, Width - 1, Title, titleFg, titleBg);
 
-        // System-menu close glyph — geometric [-] rectangle in the leftmost cell.
-        ctx.DrawSystemMenuGlyph(AbsCol, AbsRow,
-                                 TuiColorRole.WindowCloseButtonForeground,
-                                 TuiColorRole.WindowCloseButtonBackground);
+        // System-menu close glyph — uses active or inactive title roles
+        // depending on whether this window is the frontmost child.
+        // In inactive state, glyphFg uses WindowBorder (black) so the glyph
+        // outline remains crisp regardless of the title bar color.
+        TuiColorRole glyphFg = active
+            ? TuiColorRole.WindowCloseButtonForeground
+            : TuiColorRole.WindowBorder;
+
+        TuiColorRole glyphBg = active
+            ? TuiColorRole.WindowCloseButtonBackground
+            : TuiColorRole.WindowTitleInactiveBackground;
+
+        ctx.DrawSystemMenuGlyph(AbsCol, AbsRow, glyphFg, glyphBg);
     }
 }

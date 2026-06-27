@@ -176,6 +176,13 @@ public abstract class TuiApplication : IDisposable
 
         FocusManager = new TuiFocusManager();
 
+        // ── 4b. Wire the desktop command sink ─────────────────────────────────
+        // Commands that bubble up through the view tree without being consumed
+        // reach the desktop's CommandSink. This is the clean path for application-
+        // level commands (Close, custom commands) emitted from inside the tree.
+        // Assigned before OnInitialize so views added there can already emit commands.
+        Desktop.CommandSink = OnCommand;
+
         // ── 5. Let the subclass populate the view tree ────────────────────────
         OnInitialize();
 
@@ -263,11 +270,9 @@ public abstract class TuiApplication : IDisposable
                 "RunModal may only be called after Run() has initialized the application.");
 
         desktop.PushModal(dialogView);
+        _loop.BeginModal();
         try
         {
-            // Nested loop: drive iterations until the dialog signals close or
-            // the host shuts down. The outer CancellationToken is intentionally
-            // NOT checked here — the outer loop will handle it on its next turn.
             while (!dialog.CloseRequested)
             {
                 if (!_loop.RunIteration(_host, _queue, desktop, FocusManager, _renderCtx))
@@ -276,8 +281,7 @@ public abstract class TuiApplication : IDisposable
         }
         finally
         {
-            // PopModal removes the dialog from the stack and the view tree
-            // regardless of how the loop exited (normal close or host shutdown).
+            _loop.EndModal();
             desktop.PopModal();
         }
 

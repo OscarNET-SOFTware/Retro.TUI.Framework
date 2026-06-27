@@ -14,6 +14,8 @@
 // ---------------------------------------------------------------------------------------------------------------------
 
 using Retro.TUI.Events;
+using Retro.TUI.Rendering;
+using Retro.TUI.Theming;
 using Retro.TUI.Views;
 
 namespace Retro.TUI.Windows;
@@ -103,5 +105,63 @@ public class TuiDialog(string title, int col, int row, int width, int height)
 
         _result = result;
         CloseRequested = true;
+    }
+
+    // ── Rendering ─────────────────────────────────────────────────────────────
+
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Uses <see cref="TuiColorRole.DialogTitleBackground"/> and related
+    /// <c>Dialog*</c> roles instead of the <c>Window*</c> equivalents
+    /// so that the theming system can assign distinct colors to dialogs
+    /// independently of regular windows.
+    /// </remarks>
+    protected override void DrawTitleBar(TuiRenderContext ctx)
+    {
+        ArgumentNullException.ThrowIfNull(ctx);
+
+        // Fill the entire title bar row with the dialog title background.
+        ctx.FillRect(AbsCol, AbsRow, Width, 1, TuiColorRole.DialogTitleBackground);
+
+        // Title text, centered over the remaining width (columns 1..Width-1).
+        if (Width > 1)
+            ctx.DrawTextCentered(AbsCol + 1, AbsRow, Width - 1, Title,
+                                 TuiColorRole.DialogTitleForeground,
+                                 TuiColorRole.DialogTitleBackground);
+
+        // System-menu close glyph — uses dialog title roles.
+        ctx.DrawSystemMenuGlyph(AbsCol, AbsRow,
+                                TuiColorRole.DialogTitleForeground,
+                                TuiColorRole.DialogTitleBackground);
+    }
+
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Uses <see cref="TuiColorRole.DialogBackground"/> and
+    /// <see cref="TuiColorRole.DialogBorder"/> instead of the
+    /// <c>Window*</c> equivalents.
+    /// </remarks>
+    public override void Draw(TuiRenderContext ctx)
+    {
+        ArgumentNullException.ThrowIfNull(ctx);
+
+        if (ShowShadow)
+            ctx.DrawShadow(AbsCol, AbsRow, Width, Height);
+
+        ctx.FillRect(AbsCol, AbsRow, Width, Height, TuiColorRole.DialogBackground);
+        ctx.DrawBorder(AbsCol, AbsRow, Width, Height, TuiColorRole.DialogBorder);
+
+        if (ShowTitle)
+            DrawTitleBar(ctx);
+
+        ctx.PushClip(InnerCol, InnerRow, InnerWidth, InnerHeight);
+        try
+        {
+            DrawChildViews(ctx);
+        }
+        finally
+        {
+            ctx.PopClip();
+        }
     }
 }
