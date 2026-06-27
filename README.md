@@ -273,7 +273,7 @@ For the complete technical detail of each layer, see:
 `v0.3.0`
 
 - [x] ✅ `TuiWindow` with title, border and shadow
-- [ ] `TuiDialog` with modal stack
+- [x] `TuiDialog` with modal stack
 - [x] Window drag with mouse
 - [x] Z-order (bring to front on click)
 

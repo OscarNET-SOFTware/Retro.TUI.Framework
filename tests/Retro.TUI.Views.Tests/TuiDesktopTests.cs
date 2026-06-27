@@ -14,6 +14,9 @@
 // ---------------------------------------------------------------------------------------------------------------------
 
 using Retro.TUI.Rendering;
+using Retro.TUI.Theming;
+
+using SkiaSharp;
 
 namespace Retro.TUI.Views;
 
@@ -192,5 +195,71 @@ public sealed class TuiDesktopTests
     private sealed class StubView : TuiView
     {
         public override void Draw(TuiRenderContext ctx) { }
+    }
+
+    // ── Draw() — settles M2 tech debt ─────────────────────────────────────────
+
+    [Fact]
+    public void Draw_EmptyDesktop_DoesNotThrow()
+    {
+        var desktop = new TuiDesktop { Col = 0, Row = 0, Width = 80, Height = 25 };
+        var ex = Record.Exception(() => ExecuteDraw(desktop));
+        Assert.Null(ex);
+    }
+
+    [Fact]
+    public void Draw_WithChild_DoesNotThrow()
+    {
+        var desktop = new TuiDesktop { Col = 0, Row = 0, Width = 80, Height = 25 };
+        var child = new StubView { Col = 0, Row = 0, Width = 10, Height = 5 };
+        desktop.Add(child);
+
+        var ex = Record.Exception(() => ExecuteDraw(desktop));
+        Assert.Null(ex);
+    }
+
+    [Fact]
+    public void Draw_WithActiveModal_DoesNotThrow()
+    {
+        var desktop = new TuiDesktop { Col = 0, Row = 0, Width = 80, Height = 25 };
+        var modal = new StubView { Col = 5, Row = 5, Width = 20, Height = 10 };
+        desktop.PushModal(modal);
+
+        Assert.True(desktop.HasModal);
+        var ex = Record.Exception(() => ExecuteDraw(desktop));
+        Assert.Null(ex);
+    }
+
+    // ── Draw() helpers ────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Runs <see cref="TuiDesktop.Draw"/> inside a valid
+    /// <see cref="TuiRenderContext.RenderFrame"/> call using an in-memory
+    /// CPU-rasterized surface. No SDL2 or GPU required.
+    /// </summary>
+    private static void ExecuteDraw(TuiDesktop desktop)
+    {
+        using var surface = SKSurface.Create(
+            new SKImageInfo(720, 400, SKColorType.Bgra8888, SKAlphaType.Premul));
+
+        using var skFont = new SKFont(SKTypeface.Default, 16f);
+        var grid = new TuiGrid();
+        grid.Initialize(720, 400, skFont);
+
+        var font = new TuiFont();
+        font.Load(SKTypeface.Default, 16f);
+
+        var colors = new Dictionary<TuiColorRole, SKColor>();
+        foreach (TuiColorRole role in Enum.GetValues<TuiColorRole>())
+            colors[role] = SKColors.Black;
+
+        var theme = new TuiTheme
+        {
+            Name = "TestTheme",
+            Palette = new TuiPalette(colors),
+        };
+
+        using var ctx = new TuiRenderContext(grid, font, theme);
+        ctx.RenderFrame(surface, _ => desktop.Draw(ctx));
     }
 }

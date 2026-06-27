@@ -271,7 +271,7 @@ Para obtener información técnica completa sobre cada capa, consulta:
 `v0.3.0`
 
 - [x] ✅ `TuiWindow` con título, borde y sombra
-- [ ] `TuiDialog` con pila modal
+- [x] `TuiDialog` con pila modal
 - [x] Arrastrar la ventana con el ratón
 - [x] Z-order (traer al frente al hacer clic)
 

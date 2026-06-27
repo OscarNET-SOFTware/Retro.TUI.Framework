@@ -32,6 +32,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   implements mouse capture (`_capturedView`): on `ButtonDown` over a view
   with `HasCustomMouseHandling`, all subsequent mouse events are routed
   directly to that view until `ButtonUp`, bypassing `FindAt` hit-testing.
+- **Tech debt (M2):** `TuiDesktop.Draw()` now has test coverage —
+  empty desktop, desktop with child, and desktop with active modal.
 
 ### Added
 
@@ -199,7 +201,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `TuiCommand` result to the caller.
 - **`TuiMessageLoop.RunIteration`**: single-iteration entry point
   extracted from `Run`, used by `RunModal` for the nested loop.
-- 449 tests passing across all projects (0 failed).
+- 452 tests passing across all projects (0 failed).
 
 ### Changed
 
