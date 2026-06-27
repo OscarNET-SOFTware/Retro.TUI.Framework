@@ -633,23 +633,16 @@ The framework nucleus: entry point, main loop and global management.
 /// <summary>
 /// Root framework class. Entry point for every Retro.TUI application.
 /// Manages the lifecycle: initialization, message loop and shutdown.
-/// Follows the single-instance pattern (not a static Singleton: passed by injection).
 /// </summary>
 public abstract class TuiApplication : IDisposable
 {
-    // ── Global properties ─────────────────────────────────────────
-
-    /// <summary>Active theme. Changing this property changes the complete look.</summary>
-    public TuiTheme CurrentTheme { get; set; }
+    // ── Protected state ───────────────────────────────────────────
 
     /// <summary>Root desktop of the view hierarchy.</summary>
-    public TuiDesktop Desktop { get; private set; } = null!;
+    protected TuiDesktop Desktop { get; private set; }
 
-    /// <summary>Event queue shared by the host and the message loop.</summary>
-    public TuiEventQueue EventQueue { get; } = new();
-
-    /// <summary>Focus manager.</summary>
-    public TuiFocusManager Focus { get; } = new();
+    /// <summary>Keyboard focus manager.</summary>
+    protected TuiFocusManager FocusManager { get; private set; }
 
     // ── Lifecycle ─────────────────────────────────────────────────
 
@@ -657,26 +650,34 @@ public abstract class TuiApplication : IDisposable
     /// Initializes the framework, creates the window and starts the message loop.
     /// Blocks until the application terminates.
     /// </summary>
-    public void Run(ITuiHost host, TuiHostOptions options);
+    public void Run(ITuiHost host, TuiTheme theme, TuiHostOptions options);
 
-    /// <summary>Requests application shutdown.</summary>
-    public void Quit();
-
-    // ── Overridable methods ───────────────────────────────────────
+    /// <summary>Requests application shutdown on the next loop iteration.</summary>
+    public void RequestQuit();
 
     /// <summary>
-    /// Application initialization — build the Desktop and add views.
-    /// Called after the host and rendering are initialized, before the first frame.
+    /// Opens <paramref name="dialog"/> as a modal, runs a nested event loop
+    /// until <see cref="TuiDialog.Close"/> is called, then cleans up.
+    /// Returns the TuiCommand result passed to Close().
+    /// </summary>
+    protected TuiCommand RunModal(IModalDialog dialog, TuiDesktop desktop);
+
+    public void Dispose();
+
+    // ── Overridable ───────────────────────────────────────────────
+
+    /// <summary>
+    /// Build the Desktop and add views.
+    /// Called after host and rendering are initialized, before the first frame.
     /// </summary>
     protected abstract void OnInitialize();
 
     /// <summary>
-    /// High-level command processing.
-    /// base.OnCommand handles Quit, Close and system commands.
+    /// Application-level command handler. Called before the event reaches the
+    /// desktop tree. Base implementation handles TuiCommand.Quit.
+    /// Suppressed while a modal is active — commands go to the modal instead.
     /// </summary>
-    protected virtual void OnCommand(TuiCommandEvent cmd);
-
-    public void Dispose();
+    protected virtual void OnCommand(TuiCommandEvent ev);
 }
 ```
 
@@ -684,26 +685,50 @@ public abstract class TuiApplication : IDisposable
 
 ```csharp
 /// <summary>
-/// Framework main loop. Orchestrates the poll → update → render cycle.
-/// Used internally by TuiApplication.
+/// Framework main loop. Orchestrates the poll → dispatch → render → present cycle.
+/// Internal to TuiApplication. Application code never calls this directly.
 /// </summary>
 internal sealed class TuiMessageLoop
 {
     /// <summary>
-    /// Runs the loop until shutdown is requested.
-    /// Each iteration:
-    ///   1. PollEvents  → publishes TuiEvent to the queue
-    ///   2. DispatchEvents → dispatches to the view tree
-    ///   3. UpdateTimers → publishes TuiTimerEvent if due
-    ///   4. Render      → draws the complete view tree
-    ///   5. Present     → presents the frame
+    /// Runs the loop until the host signals shutdown or ct is cancelled.
+    /// Each iteration delegates to RunIteration().
     /// </summary>
     public void Run(
         ITuiHost          host,
         TuiEventQueue     queue,
         TuiDesktop        desktop,
+        TuiFocusManager   focusManager,
         TuiRenderContext  renderCtx,
-        CancellationToken ct);
+        CancellationToken ct,
+        Action<TuiCommandEvent>? onCommand = null);
+
+    /// <summary>
+    /// Executes one poll → dispatch → render → present iteration.
+    /// Used by TuiApplication.RunModal to drive the nested modal loop
+    /// without duplicating the cycle logic.
+    /// </summary>
+    internal bool RunIteration(
+        ITuiHost          host,
+        TuiEventQueue     queue,
+        TuiDesktop        desktop,
+        TuiFocusManager   focusManager,
+        TuiRenderContext  renderCtx,
+        Action<TuiCommandEvent>? onCommand = null);
+
+    // ── Mouse capture ─────────────────────────────────────────────
+    // On ButtonDown, the first ancestor in the bubble chain with
+    // HasCustomMouseHandling=true claims exclusive mouse input
+    // (_capturedView). Move and ButtonUp are delivered directly to
+    // the captured view, bypassing FindAt. Released unconditionally
+    // on ButtonUp. Enables correct drag behaviour when the cursor
+    // moves outside the window chrome.
+
+    // ── Modal event routing ───────────────────────────────────────
+    // When TuiDesktop.HasModal is true:
+    //   - Mouse events go directly to ActiveModal (FindAt bypassed).
+    //   - Keyboard events (including Escape/Cancel) go to ActiveModal.
+    //   - TuiCommandEvents go to ActiveModal; onCommand is suppressed.
 }
 ```
 
@@ -876,36 +901,36 @@ public class TuiGroup : TuiView
 
 ```csharp
 /// <summary>
-/// Root application container.
-/// Manages the background, modal stack and window z-order.
+/// Root application container. Fills the entire screen with a themed
+/// background pattern and acts as the top-level container for all
+/// windows, dialogs and overlays.
 /// </summary>
 public sealed class TuiDesktop : TuiGroup
 {
-    // ── Pre-rendered background ───────────────────────────────────
-
-    /// <summary>
-    /// Pre-renders the background as a static image.
-    /// Call once after changing the theme.
-    /// </summary>
-    public void RebuildBackground(TuiRenderContext ctx);
-
     // ── Modal stack ───────────────────────────────────────────────
 
     /// <summary>
-    /// Opens a view in modal mode.
-    /// Keyboard and mouse events only reach the active modal view.
+    /// Pushes modal onto the stack and adds it as a child so it
+    /// participates in rendering. Keyboard and mouse events only
+    /// reach the active modal view while the stack is non-empty.
     /// </summary>
     public void PushModal(TuiView modal);
 
-    /// <summary>Closes the active modal view and restores the previous state.</summary>
+    /// <summary>
+    /// Removes the topmost modal from the stack and from the child
+    /// collection. Returns the removed view, or null if empty.
+    /// </summary>
     public TuiView? PopModal();
 
-    public bool HasModal => _modalStack.Count > 0;
+    /// <summary>True when one or more modal views are active.</summary>
+    public bool HasModal { get; }
 
-    // ── Z-order ───────────────────────────────────────────────────
+    /// <summary>The topmost modal view, or null when the stack is empty.</summary>
+    public TuiView? ActiveModal { get; }
 
-    /// <summary>Brings a window to the front of the z-order.</summary>
-    public void BringToFront(TuiView view);
+    // ── Rendering ─────────────────────────────────────────────────
+
+    public override void Draw(TuiRenderContext ctx);
 }
 ```
 
@@ -943,24 +968,53 @@ public class TuiWindow : TuiGroup
 }
 ```
 
-### 7.2 TuiDialog
+### 7.2 IModalDialog
 
 ```csharp
 /// <summary>
-/// Modal dialog. Inherits from TuiWindow and integrates
-/// with the Desktop modal stack.
+/// Minimal contract that a modal view must satisfy so that
+/// TuiApplication.RunModal can drive and observe its lifecycle
+/// without a dependency on Retro.TUI.Windows.
+/// Implementors must also derive from TuiView.
 /// </summary>
-public class TuiDialog : TuiWindow
+/// <remarks>Defined in Retro.TUI.Views.</remarks>
+public interface IModalDialog
 {
-    public TuiDialog(string title, int col, int row, int width, int height);
+    /// <summary>
+    /// True after Close() is called. Polled each iteration by
+    /// TuiApplication.RunModal to detect that the nested loop should stop.
+    /// </summary>
+    bool CloseRequested { get; }
 
     /// <summary>
-    /// Opens the dialog as modal over the given Desktop.
-    /// Blocks until Close() is called.
+    /// The command result that the dialog returns to RunModal.
+    /// Defaults to TuiCommand.Cancel before Close() is called.
     /// </summary>
-    public TuiCommand ShowModal(TuiDesktop desktop);
+    TuiCommand Result { get; }
+}
+```
 
-    /// <summary>Closes the dialog returning the given command result.</summary>
+### 7.3 TuiDialog
+
+```csharp
+/// <summary>
+/// Modal dialog. Extends TuiWindow and implements IModalDialog.
+/// Never opened directly — use TuiApplication.RunModal.
+/// </summary>
+public class TuiDialog(string title, int col, int row, int width, int height)
+    : TuiWindow(title, col, row, width, height), IModalDialog
+{
+    /// <inheritdoc/>
+    public bool CloseRequested { get; private set; }
+
+    /// <inheritdoc/>
+    public TuiCommand Result { get; private set; }
+
+    /// <summary>
+    /// Signals that the dialog should close, returning result to the
+    /// caller of TuiApplication.RunModal. Idempotent — subsequent calls
+    /// after the first are no-ops.
+    /// </summary>
     public void Close(TuiCommand result = TuiCommand.Cancel);
 }
 ```

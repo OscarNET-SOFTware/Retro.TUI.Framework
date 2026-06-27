@@ -268,12 +268,14 @@ Para obtener información técnica completa sobre cada capa, consulta:
 - [x] ✅ Cursor de ratón personalizado
 
 ### Milestone 3 — Ventanas
-`v0.3.0`
+`v0.3.0` ✅
 
 - [x] ✅ `TuiWindow` con título, borde y sombra
-- [x] `TuiDialog` con pila modal
-- [x] Arrastrar la ventana con el ratón
-- [x] Z-order (traer al frente al hacer clic)
+- [x] ✅ `TuiDialog` con pila modal (`IModalDialog`, `TuiDesktop.PushModal/PopModal`)
+- [x] ✅ Arrastrar ventana con el ratón (mouse capture vía `_capturedView`)
+- [x] ✅ Z-order (traer al frente al hacer clic)
+- [x] ✅ `TuiApplication.RunModal` — bucle de eventos anidado, ciclo de vida automático
+- [x] ✅ Enrutado modal — teclado, ratón y comandos restringidos al modal activo
 
 ### Milestone 4 — Controles base (Widgets)
 `v0.4.0`
