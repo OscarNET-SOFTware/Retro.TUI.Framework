@@ -76,7 +76,7 @@ public sealed class PcTools9ThemeTests
     [InlineData(TuiColorRole.WindowTitleInactiveBackground, 0xCA, 0xCA, 0xCA)] // PcToolsLightGray
     [InlineData(TuiColorRole.WindowTitleInactiveForeground, 0x69, 0x69, 0x69)] // PcToolsGray
     [InlineData(TuiColorRole.WindowShadow, 0x00, 0x00, 0x00)] // Black
-    [InlineData(TuiColorRole.DialogBackground, 0x55, 0x55, 0xFF)] // EgaBrightBlue
+    [InlineData(TuiColorRole.DialogBackground, 0x55, 0xFF, 0xFF)] // EgaBrightCyan
     [InlineData(TuiColorRole.DialogTitleBackground, 0xFF, 0xFF, 0xFF)] // White
     [InlineData(TuiColorRole.DialogTitleWarningBackground, 0xFF, 0x55, 0x55)] // EgaBrightRed
     [InlineData(TuiColorRole.DialogHighlightForeground, 0xFF, 0xFF, 0x55)] // EgaBrightYellow
@@ -159,6 +159,6 @@ public sealed class PcTools9ThemeTests
     [Fact]
     public void Instance_ShadowOpacity_Is1()
     {
-        Assert.Equal(1.0f, PcTools9Theme.Instance.ShadowOpacity);
+        Assert.Equal(0.65f, PcTools9Theme.Instance.ShadowOpacity);
     }
 }

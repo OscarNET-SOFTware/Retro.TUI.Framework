@@ -11,11 +11,11 @@
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
 
     <!-- ── Output options ───────────────────────────────────────────────── -->
-    <OutputType>exe</OutputType>
+    <OutputType Condition="'$(OS)' == 'Windows_NT'">WinExe</OutputType>
+    <OutputType Condition="'$(OS)' != 'Windows_NT'">Exe</OutputType>
 
     <!-- ── Packaging options ────────────────────────────────────────────── -->
     <IsPackable>false</IsPackable>
-    <IsTestProject>true</IsTestProject>
   </PropertyGroup>
 
   <!-- ── Debug configuration ────────────────────────────────────────────── -->

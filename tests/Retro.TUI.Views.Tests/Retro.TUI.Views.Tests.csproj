@@ -6,6 +6,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Retro.TUI.Views\Retro.TUI.Views.csproj" />
+    <ProjectReference Include="..\..\src\Retro.TUI.Rendering\Retro.TUI.Rendering.csproj" />
   </ItemGroup>
 
 </Project>

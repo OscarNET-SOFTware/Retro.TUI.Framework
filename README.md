@@ -270,12 +270,14 @@ For the complete technical detail of each layer, see:
 - [x] ✅ Custom mouse cursor
 
 ### Milestone 3 — Windows
-`v0.3.0`
+`v0.3.0` ✅
 
-- [ ] `TuiWindow` with title, border and shadow
-- [ ] `TuiDialog` with modal stack
-- [ ] Window drag with mouse
-- [ ] Z-order (bring to front on click)
+- [x] ✅ `TuiWindow` with title, border and shadow
+- [x] ✅ `TuiDialog` with modal stack (`IModalDialog`, `TuiDesktop.PushModal/PopModal`)
+- [x] ✅ Window drag with mouse (mouse capture via `_capturedView`)
+- [x] ✅ Z-order (bring to front on click)
+- [x] ✅ `TuiApplication.RunModal` — nested event loop, automatic lifecycle
+- [x] ✅ Modal event routing — keyboard, mouse and commands restricted to active modal
 
 ### Milestone 4 — Base controls (Widgets)
 `v0.4.0`

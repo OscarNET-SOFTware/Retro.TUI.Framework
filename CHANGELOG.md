@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0-alpha.3] - 2026-06-27
+
 ### Added
 
 - Initial project structure and architecture documentation.
@@ -60,91 +62,105 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     per PC Tools 9.x visual reference. No character box-drawing glyphs.
 - `Retro.TUI.Rendering.Tests`: contract tests (no SDL2/GPU required) and
   font integration tests against `PcTools9Theme`.
-- `Retro.TUI.Framework.slnx`: updated with all M1 and M2 projects.
 - `Retro.TUI.Views`: new project implementing the view-tree layer.
   - `TuiView`: abstract base class for all visual elements. Manages relative and
-    absolute grid coordinates (`Col`/`Row`/`AbsCol`/`AbsRow`), `Visible`/`Enabled`/
-    `Focusable` state, parent–child linkage, dirty-flag propagation (`Invalidate`/
-    `IsDirty`/`ClearDirty`), and the `Draw`/`HandleEvent` contract.
-  - `TuiGroup`: composable container. Exposes `Add`/`Remove` for child lifecycle
-    (sets and clears `Parent`). `FindAt` performs depth-first reverse-order
-    hit-testing, skipping invisible children. `Draw` iterates children back-to-front
-    with per-child `PushClip`/`PopClip`. `HandleEvent` dispatches front-to-back
-    until consumed.
-  - `TuiDesktop`: sealed root view. Fills the screen with the themed background
-    pattern via `TuiRenderContext.DrawDesktopPattern` before delegating to
-    `TuiGroup.Draw`.
-- `Retro.TUI.Views.Tests`: new test project.
-  - `TuiViewTests`: tree linkage, absolute coordinate accumulation, dirty-flag
-    propagation, default state contracts.
-  - `TuiGroupTests`: `Add`/`Remove` lifecycle, `FindAt` hit-testing (visible,
-    invisible, overlapping and nested children), `HandleEvent` dispatch order.
-  - `TuiDesktopTests`: inheritance contracts, child management delegation,
-    `FindAt` on the root container.
+    absolute grid coordinates, `Visible`/`Enabled`/`Focusable` state,
+    parent–child linkage, dirty-flag propagation and the `Draw`/`HandleEvent` contract.
+  - `TuiGroup`: composable container. Exposes `Add`/`Remove` for child lifecycle.
+    `FindAt` performs depth-first reverse-order hit-testing. `HandleEvent` dispatches
+    front-to-back until consumed. `DrawChildViews` (protected) iterates children
+    back-to-front for use by subclasses that manage their own clipping.
+  - `TuiDesktop`: sealed root view. Paints the themed background pattern before
+    delegating to `TuiGroup.Draw`. Hosts the modal stack (`PushModal`/`PopModal`/
+    `HasModal`/`ActiveModal`) and the `CommandSink` callback for unhandled commands.
+  - `IModalDialog`: minimal two-member interface (`CloseRequested`, `Result`) that
+    decouples the modal loop in `Retro.TUI.Core` from `Retro.TUI.Windows`,
+    preserving the dependency graph.
+- `Retro.TUI.Views.Tests`: new test project covering `TuiView`, `TuiGroup` and
+  `TuiDesktop` contracts including modal stack and `DrawChildViews`.
 - `Retro.TUI.Core`: new project wiring together the hosting, rendering and view-tree
   layers.
-  - `TuiFocusChangedEventArgs`: `EventArgs` subtype carrying the newly focused view
-    (or `null` when focus is cleared).
   - `TuiFocusManager`: manages keyboard focus across registered focusable views.
-    Maintains tab order by registration sequence. Exposes `Register`/`Unregister`,
-    `SetFocus`, `FocusNext`/`FocusPrevious` (with wrap-around), `IsFocused`, `Clear`
-    and the `FocusChanged` event.
+    Tab order by registration sequence. `Register`/`Unregister`, `SetFocus`,
+    `FocusNext`/`FocusPrevious` (with wrap-around), `IsFocused`, `Clear` and
+    the `FocusChanged` event.
   - `TuiMessageLoop`: `internal sealed` instance class implementing the
     poll → dispatch → render → cursor → present cycle.
-    Keyboard routing: Tab/Shift+Tab → focus manager; Escape → `TuiCommand.Cancel`
-    broadcast to the desktop; all other keys → focused view.
-    Mouse routing: `Col`/`Row` are recomputed from `PixelX`/`PixelY` via
-    `TuiGrid.CellCol`/`CellRow` before `FindAt` hit-test and ancestor bubble-up;
-    pure `TuiGroup` instances are skipped during bubble-up to prevent
-    double-dispatch through container `HandleEvent`.
-    Tracks the last known mouse-pointer pixel position
-    (`CursorPixelX`/`CursorPixelY`, `internal`) and draws the custom mouse
-    cursor on top of the view tree every frame via
-    `TuiRenderContext.DrawMouseCursor`.
-    Render step delegates to `TuiRenderContext.RenderFrame`.
-  - `TuiApplication`: abstract entry point. Subclass and override `OnInitialize` to
-    populate the view tree; call `Run(host, theme, options)` to start the loop.
-    Implements `IDisposable`. Typeface resolution uses `SKFontManager.Default` —
-    theme packages register their font in their static initializer.
-- Custom mouse cursor (M2 roadmap item, completed):
-  - `TuiMouseEvent`: added `PixelX`/`PixelY` (`float`, default `0`) carrying the
-    real screen-pixel position reported by the host, alongside the existing
-    `Col`/`Row` grid coordinates.
-  - `SdlHost`: all mouse handlers (`Move`, `ButtonDown`, `ButtonUp`, `Click`,
-    `DoubleClick`, `Wheel`) now post `Col=0, Row=0` as explicit
-    "not yet computed" placeholders, plus the real `PixelX`/`PixelY`.
-    Double-click detection switched from cell-based to pixel-based comparison
-    (`_lastClickPixelX`/`_lastClickPixelY`).
-  - `TuiMessageLoop`: recomputes `Col`/`Row` from `PixelX`/`PixelY` via
-    `TuiGrid.CellCol`/`CellRow` — the single point of truth for pixel→cell
-    mapping, fixing a latent M1 issue where `Col`/`Row` were documented as grid
-    cells but populated with raw SDL2 pixel coordinates.
-  - `TuiColorRole`: added `MouseCursorFill` and `MouseCursorOutline`.
-  - `PcTools9Theme`: maps `MouseCursorFill` → White, `MouseCursorOutline` → Black.
-  - `TuiRenderContext.DrawMouseCursor(float pixelX, float pixelY)`: renders a
-    12×19 pixel-art arrow bitmap at the given screen-pixel position, replacing
-    the host's system cursor (`TuiHostOptions.HideSystemCursor`). The bitmap is
-    built once via `BuildCursorBitmap` and cached in `_cursorBitmap`, disposed
-    with the context.
-- `Retro.TUI.Core.Tests`: new test project.
-  - `TuiFocusManagerTests`: registration contract, tab-order cycling,
-    `SetFocus`/`Clear`, `FocusChanged` event — including no-raise-on-same-view
-    and null-on-clear cases.
-  - `TuiMessageLoopTests`: Tab/Shift+Tab routing, Escape → Cancel synthesis,
-    regular key delivery to focused view, mouse hit-test dispatch, invisible-view
-    exclusion, out-of-bounds no-op, pixel→cell `Col`/`Row` recomputation,
-    `TuiGroup` bubble-up skip, and mouse-cursor pixel-position tracking.
-- 388 tests passing across all projects (0 failed).
+    - Keyboard routing: Tab/Shift+Tab → focus manager; Escape without modal →
+      `onCommand`; Escape with modal → active modal; Enter with modal → active
+      modal; all other keys → focused view.
+    - Mouse routing: pixel→cell conversion via `TuiGrid`; mouse capture
+      (`_capturedView`) for drag correctness; `HasCustomMouseHandling` opt-in
+      for bubble-up; modal fast path bypasses hit-test entirely.
+    - Modal reentrancy guard: `_modalWasOpened` / `_inNestedLoop` flags prevent
+      orphaned mouse capture when `RunModal` is called synchronously from inside
+      `HandleEvent` (e.g. `TuiWindow [-]` → `CommandSink` → `RunModal`).
+    - Custom mouse cursor drawn each frame via `TuiRenderContext.DrawMouseCursor`.
+  - `TuiApplication`: abstract entry point. `Run(host, theme, options)` drives the
+    main loop. `RunModal(dialog, desktop)` orchestrates the full modal lifecycle —
+    push, nested event loop, pop. `OnCommand` / `OnInitialize` are protected
+    virtual extension points. Implements `IDisposable`.
+- `Retro.TUI.Core.Tests`: new test project covering `TuiFocusManager` and
+  `TuiMessageLoop` contracts including mouse capture, modal routing and
+  pixel→cell recomputation.
+- `Retro.TUI.Windows`: new project implementing the windows layer (leaf layer,
+  not referenced by `Retro.TUI.Core`).
+  - `TuiWindow`: top-level draggable container with title bar (system-menu glyph +
+    centered title), left and bottom border, optional drop shadow, active/inactive
+    palette, z-order (`BringToFront`), and close-button (`[-]`) that emits
+    `TuiCommand.Close` via `CommandSink`.
+  - `TuiDialog`: modal window extending `TuiWindow` and implementing `IModalDialog`.
+    Uses `Dialog*` color roles independently of `Window*` roles. `Close(result)` is
+    idempotent. `DrawTitleBar` overridden to use `DialogTitle*` roles.
+- `Retro.TUI.Windows.Tests`: new test project covering `TuiWindow` and `TuiDialog`
+  contracts including layout, active state, Draw, and modal result.
+- `TuiView.HasCustomMouseHandling`: public virtual property (default `false`).
+- `TuiGroup.IsFrontmost(TuiView)`: returns whether a child is the frontmost
+  direct child. Used by `TuiWindow.IsActive`.
+- `TuiGroup.Frontmost`: public read-only property returning the frontmost child,
+  or `null` when the group is empty.
+- Custom mouse cursor: 12×19 pixel-art arrow bitmap rendered each frame via
+  `TuiRenderContext.DrawMouseCursor`, replacing the host system cursor.
+- `Retro.TUI.Sample.Basic`: minimal sample demonstrating two draggable windows,
+  z-order activation, and the modal stack via `ConfirmCloseDialog`.
+- 461 tests passing across all projects (0 failed).
 
 ### Changed
 
-- `PcTools9Theme`: registers the IBM VGA 9x16 typeface (`PxPlus IBM VGA 9x16`)
-  via a static field initializer using `SKTypeface.FromStream`. Replaces the
-  previous `SKFontManager.RegisterTypeface` call removed in SkiaSharp 3.x.
+- `PcTools9Theme`: registers IBM VGA 9x16 typeface via `SKTypeface.FromStream`
+  (replaces removed `SKFontManager.RegisterTypeface` from SkiaSharp 3.x).
+- `PcTools9Theme`: `DialogBackground` → `EgaBrightCyan` (`#55FFFF`); dialog
+  palette now visually distinct from window palette per PC Tools 9.x reference.
 - `TuiRenderContext`: added `RenderFrame(SKSurface, Action<TuiRenderContext>)` —
-  executes a full frame inside a matched `BeginFrame`/`EndFrame` pair with
-  `try/finally` guarantee, allowing `Retro.TUI.Core` to control the render cycle
-  without requiring `InternalsVisibleTo` access to `Retro.TUI.Rendering` internals.
+  full frame inside matched `BeginFrame`/`EndFrame` with `try/finally` guarantee.
+- `TuiMessageLoop` event dispatch: when `HasModal` is `true`, all keyboard, mouse
+  and command events route exclusively to `ActiveModal`.
+- `TuiTheme`: added `SKTypeface? Typeface` for direct typeface injection.
+- `TuiWindow.DrawTitleBar`: extracted as `protected virtual` so `TuiDialog` can
+  override it to use `Dialog*` color roles without duplicating `Draw` logic.
+- `TuiGroup.Draw`: removed `PushClip`/`PopClip` — clip is each view's own
+  responsibility.
+
+### Fixed
+
+- `SdlHost.Present`: texture was never unlocked before `RenderCopy`, causing a
+  null `SKSurface` on the second frame.
+- `TuiRenderContext.DrawShadow`: shadow offsets are now in pixels (not grid cells);
+  corner overlap removed.
+- `TuiRenderContext.DrawBorder`: stroke width corrected to 1 px.
+- `TuiWindow.Draw`: window fill added; clip applied only to the inner area.
+- Mouse drag: moving the cursor outside the window chrome during drag no longer
+  drops the event (`_capturedView` capture in `TuiMessageLoop`).
+- Mouse capture orphan on modal open: `_modalWasOpened` flag prevents establishing
+  capture when `RunModal` was called synchronously inside `HandleEvent`.
+- Mouse capture orphan on modal close: `ButtonUp` inside the modal fast path
+  clears `_capturedView` so subsequent clicks are not swallowed.
+- Close-button double-trigger: `[-]` hit-test excludes `AbsCol + 1` from drag
+  detection; drag begin guard excludes the same two cells.
+- `TuiDialog.Draw`: uses `DrawChildViews` instead of `base.Draw` to avoid
+  `TuiWindow.Draw` overwriting the `DialogBackground` fill with `WindowBackground`.
+- `TuiWindow` inactive glyph: `[-]` now uses `WindowTitleInactiveBackground` /
+  `WindowBorder` when the window is inactive.
 
 ### Removed
 
@@ -153,30 +169,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Known limitations
 
-- Mouse bubble-up skips all `TuiGroup` subclasses (`current is TuiGroup`),
-  including future `TuiWindow` instances that override `HandleEvent` with their
-  own logic. To be revisited in M3 when `TuiWindow` is implemented — candidate
-  solutions: `IMouseEventHandler` interface or `HandlesMouseEvents` property
-  on `TuiView`.
 - `TuiApplication.Run` requires a fully initialised `TuiHostOptions`
-  (`Title`, `Width`, `Height` are `required`). No default options are provided
-  by design — the caller always knows how it wants its window.
-- `_cursorBitmap` in `TuiRenderContext` is cached with colors resolved from
-  `MouseCursorFill`/`MouseCursorOutline` at first draw. If the active theme
-  changes at runtime, the cursor retains stale colors until the
-  `TuiRenderContext` is recreated. Revisit if hot theme-switching becomes a
-  supported scenario.
-- Coverage gaps, both by design (integration-only code, same category as
-  `SdlHost` at 18.2 % line / 11.4 % branch):
-  - `TuiDesktop.Draw` (5 lines, 0 % coverage): `TuiDesktopTests` exercises only
-    inherited `TuiGroup`/`TuiView` members, attributed to those classes by the
-    coverage tool. No test in `Retro.TUI.Views.Tests` constructs a live
-    `TuiRenderContext` with an active frame. Closeable with a small addition
-    mirroring `RenderingContractTests.AssertDrawDoesNotThrow`.
-  - `TuiApplication` (47 lines, 0 % coverage) and the `Run` loop body in
-    `TuiMessageLoop` (26 lines, part of 63.8 % coverage): require a live
-    `ITuiHost` (SDL2) or a `FakeTuiHost` stub equivalent to the one in
-    `Retro.TUI.Hosting.Tests.ITuiHostContractTests`. Planned for a shared
-    `FakeTuiHost` in a future milestone.
+  (`Title`, `Width`, `Height` are `required`). No default options provided by
+  design — the caller always knows how it wants its window.
+- `_cursorBitmap` in `TuiRenderContext` is cached with colors resolved at first
+  draw. If the active theme changes at runtime, the cursor retains stale colors
+  until `TuiRenderContext` is recreated.
+- `icon.png` is referenced in `src/Directory.Build.props` for NuGet packaging
+  but not yet present in the repository. `dotnet pack` will warn until it is added.
+- Coverage gaps (integration-only code, same category as `SdlHost`):
+  - `TuiApplication` (0 % coverage): requires a live `ITuiHost` or a shared
+    `FakeTuiHost`. Planned for M4.
+  - `SdlHost` (0 % line / 0 % branch): SDL2 integration; not unit-testable
+    without a display. Excluded by design.
 
-[Unreleased]: https://github.com/OscarNET-SOFTware/Retro.TUI.Framework/compare/HEAD
+[Unreleased]: https://github.com/OscarNET-SOFTware/Retro.TUI.Framework/compare/v0.3.0-alpha.3...HEAD
+[0.3.0-alpha.3]: https://github.com/OscarNET-SOFTware/Retro.TUI.Framework/releases/tag/v0.3.0-alpha.3

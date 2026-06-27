@@ -13,6 +13,12 @@
 // </copyright>
 // ---------------------------------------------------------------------------------------------------------------------
 
+using Retro.TUI.Events;
+using Retro.TUI.Rendering;
+using Retro.TUI.Theming;
+
+using SkiaSharp;
+
 namespace Retro.TUI.Views;
 
 /// <summary>
@@ -28,7 +34,7 @@ public sealed class TuiDesktopTests
     {
         var desktop = new TuiDesktop();
 
-        Assert.IsAssignableFrom<TuiGroup>(desktop);
+        Assert.IsType<TuiGroup>(desktop, exactMatch: false);
     }
 
     [Fact]
@@ -36,7 +42,7 @@ public sealed class TuiDesktopTests
     {
         var desktop = new TuiDesktop();
 
-        Assert.IsAssignableFrom<TuiView>(desktop);
+        Assert.IsType<TuiView>(desktop, exactMatch: false);
     }
 
     // ── Default state ─────────────────────────────────────────────────────────
@@ -105,5 +111,211 @@ public sealed class TuiDesktopTests
         TuiView? hit = desktop.FindAt(absCol: 5, absRow: 5);
 
         Assert.Null(hit);
+    }
+
+    // ── Modal stack ───────────────────────────────────────────────────────────
+
+    [Fact]
+    public void HasModal_WhenEmpty_IsFalse()
+    {
+        var desktop = new TuiDesktop { Width = 80, Height = 25 };
+        Assert.False(desktop.HasModal);
+    }
+
+    [Fact]
+    public void ActiveModal_WhenEmpty_IsNull()
+    {
+        var desktop = new TuiDesktop { Width = 80, Height = 25 };
+        Assert.Null(desktop.ActiveModal);
+    }
+
+    [Fact]
+    public void PushModal_SetsHasModalTrue_AndAddsChild()
+    {
+        var desktop = new TuiDesktop { Width = 80, Height = 25 };
+        var dialog = new StubView { Col = 0, Row = 0, Width = 20, Height = 10 };
+
+        desktop.PushModal(dialog);
+
+        Assert.True(desktop.HasModal);
+        Assert.Equal(dialog, desktop.ActiveModal);
+        // Verify the dialog participates in hit-testing (i.e. it was added as a child).
+        Assert.Equal(dialog, desktop.FindAt(0, 0));
+    }
+
+    [Fact]
+    public void PopModal_RemovesTopModal_AndChild()
+    {
+        var desktop = new TuiDesktop { Width = 80, Height = 25 };
+        var dialog = new StubView { Col = 0, Row = 0, Width = 20, Height = 10 };
+        desktop.PushModal(dialog);
+
+        var popped = desktop.PopModal();
+
+        Assert.Equal(dialog, popped);
+        Assert.False(desktop.HasModal);
+        // Verify the dialog no longer participates in hit-testing (removed from children).
+        Assert.Null(desktop.FindAt(0, 0));
+    }
+
+    [Fact]
+    public void PopModal_WhenEmpty_ReturnsNull()
+    {
+        var desktop = new TuiDesktop { Width = 80, Height = 25 };
+        Assert.Null(desktop.PopModal());
+    }
+
+    [Fact]
+    public void PushModal_NestedModals_ActiveModalIsTopmost()
+    {
+        var desktop = new TuiDesktop { Width = 80, Height = 25 };
+        var first = new StubView { Width = 20, Height = 10 };
+        var second = new StubView { Width = 20, Height = 10 };
+
+        desktop.PushModal(first);
+        desktop.PushModal(second);
+
+        Assert.Equal(second, desktop.ActiveModal);
+    }
+
+    [Fact]
+    public void PopModal_NestedModals_RestoresPreviousModal()
+    {
+        var desktop = new TuiDesktop { Width = 80, Height = 25 };
+        var first = new StubView { Width = 20, Height = 10 };
+        var second = new StubView { Width = 20, Height = 10 };
+
+        desktop.PushModal(first);
+        desktop.PushModal(second);
+        desktop.PopModal();
+
+        Assert.Equal(first, desktop.ActiveModal);
+        Assert.True(desktop.HasModal);
+    }
+
+    private sealed class StubView : TuiView
+    {
+        public override void Draw(TuiRenderContext ctx) { }
+    }
+
+    // ── Draw() — settles M2 tech debt ─────────────────────────────────────────
+
+    [Fact]
+    public void Draw_EmptyDesktop_DoesNotThrow()
+    {
+        var desktop = new TuiDesktop { Col = 0, Row = 0, Width = 80, Height = 25 };
+        var ex = Record.Exception(() => ExecuteDraw(desktop));
+        Assert.Null(ex);
+    }
+
+    [Fact]
+    public void Draw_WithChild_DoesNotThrow()
+    {
+        var desktop = new TuiDesktop { Col = 0, Row = 0, Width = 80, Height = 25 };
+        var child = new StubView { Col = 0, Row = 0, Width = 10, Height = 5 };
+        desktop.Add(child);
+
+        var ex = Record.Exception(() => ExecuteDraw(desktop));
+        Assert.Null(ex);
+    }
+
+    [Fact]
+    public void Draw_WithActiveModal_DoesNotThrow()
+    {
+        var desktop = new TuiDesktop { Col = 0, Row = 0, Width = 80, Height = 25 };
+        var modal = new StubView { Col = 5, Row = 5, Width = 20, Height = 10 };
+        desktop.PushModal(modal);
+
+        Assert.True(desktop.HasModal);
+        var ex = Record.Exception(() => ExecuteDraw(desktop));
+        Assert.Null(ex);
+    }
+
+    // ── Draw() helpers ────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Runs <see cref="TuiDesktop.Draw"/> inside a valid
+    /// <see cref="TuiRenderContext.RenderFrame"/> call using an in-memory
+    /// CPU-rasterized surface. No SDL2 or GPU required.
+    /// </summary>
+    private static void ExecuteDraw(TuiDesktop desktop)
+    {
+        using var surface = SKSurface.Create(
+            new SKImageInfo(720, 400, SKColorType.Bgra8888, SKAlphaType.Premul));
+
+        using var skFont = new SKFont(SKTypeface.Default, 16f);
+        var grid = new TuiGrid();
+        grid.Initialize(720, 400, skFont);
+
+        var font = new TuiFont();
+        font.Load(SKTypeface.Default, 16f);
+
+        var colors = new Dictionary<TuiColorRole, SKColor>();
+        foreach (TuiColorRole role in Enum.GetValues<TuiColorRole>())
+            colors[role] = SKColors.Black;
+
+        var theme = new TuiTheme
+        {
+            Name = "TestTheme",
+            Palette = new TuiPalette(colors),
+        };
+
+        using var ctx = new TuiRenderContext(grid, font, theme);
+        ctx.RenderFrame(surface, _ => desktop.Draw(ctx));
+    }
+
+    // ── CommandSink ───────────────────────────────────────────────────────────
+
+    [Fact]
+    public void CommandSink_DefaultValue_IsNull()
+    {
+        var desktop = new TuiDesktop { Width = 80, Height = 25 };
+        Assert.Null(desktop.CommandSink);
+    }
+
+    [Fact]
+    public void HandleEvent_CommandNotConsumedByChildren_InvokesCommandSink()
+    {
+        var desktop = new TuiDesktop { Width = 80, Height = 25 };
+        TuiCommandEvent? received = null;
+        desktop.CommandSink = ev => received = ev;
+
+        var cmd = new TuiCommandEvent(TuiCommand.Close);
+        desktop.HandleEvent(cmd);
+
+        Assert.NotNull(received);
+        Assert.Equal(TuiCommand.Close, received.Command);
+    }
+
+    [Fact]
+    public void HandleEvent_CommandConsumedByChild_CommandSinkNotInvoked()
+    {
+        var desktop = new TuiDesktop { Width = 80, Height = 25 };
+        var consumer = new CommandConsumingView { Col = 0, Row = 0, Width = 10, Height = 5 };
+        desktop.Add(consumer);
+
+        bool sinkInvoked = false;
+        desktop.CommandSink = _ => sinkInvoked = true;
+
+        desktop.HandleEvent(new TuiCommandEvent(TuiCommand.Close));
+
+        Assert.False(sinkInvoked);
+    }
+
+    [Fact]
+    public void HandleEvent_NoCommandSink_DoesNotThrow()
+    {
+        var desktop = new TuiDesktop { Width = 80, Height = 25 };
+        var ex = Record.Exception(() =>
+            desktop.HandleEvent(new TuiCommandEvent(TuiCommand.Close)));
+        Assert.Null(ex);
+    }
+
+    // ── CommandConsumingView helper ───────────────────────────────────────────
+
+    private sealed class CommandConsumingView : TuiView
+    {
+        public override void Draw(TuiRenderContext ctx) { }
+        public override bool HandleEvent(TuiEvent ev) => ev is TuiCommandEvent;
     }
 }

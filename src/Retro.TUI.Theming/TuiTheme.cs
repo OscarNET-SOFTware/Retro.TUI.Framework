@@ -71,6 +71,20 @@ public sealed class TuiTheme
     public string FontFamily { get; init; } = "IBM VGA 9x16";
 
     /// <summary>
+    /// Gets the pre-loaded <see cref="SkiaSharp.SKTypeface"/> for this theme, or
+    /// <see langword="null"/> to resolve by <see cref="FontFamily"/> name via
+    /// <c>SKFontManager.Default.MatchFamily</c>.
+    /// </summary>
+    /// <remarks>
+    /// Theme packages that load fonts from embedded resources should set this
+    /// property directly. <c>SKFontManager.RegisterTypeface</c> was removed in
+    /// SkiaSharp 3.x, so family-name lookup via <c>MatchFamily</c> does not work
+    /// for embedded fonts. When this property is non-null, <c>TuiApplication</c>
+    /// uses it directly and skips the <c>MatchFamily</c> fallback.
+    /// </remarks>
+    public SkiaSharp.SKTypeface? Typeface { get; init; }
+
+    /// <summary>
     /// Size of the primary font in logical pixels.
     /// </summary>
     /// <value>Defaults to <c>16f</c> (matches the 9×16 px VGA glyph height).</value>
@@ -88,19 +102,19 @@ public sealed class TuiTheme
     /// </remarks>
     /// <value>
     /// A value in the range [0.0, 1.0].
-    /// Defaults to <c>1.0f</c> (fully opaque, matching the original PC Tools look).
+    /// Defaults to <c>0.65f</c>.
     /// </value>
-    public float ShadowOpacity { get; init; } = 1.0f;
+    public float ShadowOpacity { get; init; } = 0.65f;
 
     /// <summary>
     /// Horizontal offset in pixels of drop shadows.
     /// </summary>
-    /// <value>Defaults to <c>2</c> (two character cells to the right).</value>
-    public int ShadowOffsetX { get; init; } = 2;
+    /// <value>Defaults to <c>8</c>. Unit is pixels, not grid cells.</value>
+    public int ShadowOffsetX { get; init; } = 8;
 
     /// <summary>
     /// Vertical offset in pixels of drop shadows.
     /// </summary>
-    /// <value>Defaults to <c>1</c> (one character cell downward).</value>
-    public int ShadowOffsetY { get; init; } = 1;
+    /// <value>Defaults to <c>7</c>. Unit is pixels, not grid cells.</value>
+    public int ShadowOffsetY { get; init; } = 7;
 }

@@ -44,7 +44,13 @@ public abstract class TuiView
     // ── Backing fields ────────────────────────────────────────────────────────
 
     private readonly List<TuiView> _children = [];
+
+    // _isDirty is intentionally a plain field: Invalidate() and ClearDirty() mutate
+    // it directly without property semantics. IDE0032 suppressed to avoid a spurious
+    // auto-property suggestion on a field with non-trivial write paths.
+#pragma warning disable IDE0032
     private bool _isDirty = true;
+#pragma warning restore IDE0032
 
     // ── Position and size (grid cells, relative to parent) ────────────────────
 
@@ -104,6 +110,29 @@ public abstract class TuiView
     /// </summary>
     /// <value>Defaults to <see langword="false"/>.</value>
     public bool Focusable { get; set; }
+
+    // ── Mouse handling opt-in ─────────────────────────────────────────────────
+
+    /// <summary>
+    /// Gets a value indicating whether this view contains custom mouse-event
+    /// handling logic in its <see cref="HandleEvent"/> override.
+    /// </summary>
+    /// <value>Defaults to <see langword="false"/>.</value>
+    /// <remarks>
+    /// The message loop uses this property during the mouse-event bubble-up phase
+    /// to decide whether to invoke <see cref="HandleEvent"/> on a
+    /// <see cref="TuiGroup"/> subclass. Plain <see cref="TuiGroup"/> instances
+    /// (where this returns <see langword="false"/>) are skipped because their
+    /// <see cref="HandleEvent"/> only re-dispatches downward to children, which
+    /// would deliver the event a second time to a target already tried via
+    /// hit-testing.
+    /// <para/>
+    /// Override and return <see langword="true"/> in any <see cref="TuiGroup"/>
+    /// subclass that needs to intercept mouse events at the container level —
+    /// for example, <c>TuiWindow</c> overrides this to handle title-bar clicks
+    /// and drag operations.
+    /// </remarks>
+    public virtual bool HasCustomMouseHandling => false;
 
     // ── Tree ──────────────────────────────────────────────────────────────────
 
@@ -199,6 +228,32 @@ public abstract class TuiView
         return true;
     }
 
+    /// <summary>
+    /// Moves <paramref name="child"/> to the end of the internal children list,
+    /// making it the frontmost (last-painted, last-dispatched) child.
+    /// </summary>
+    /// <param name="child">The child to promote. Must not be <see langword="null"/>.</param>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="child"/> is <see langword="null"/>.
+    /// </exception>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when <paramref name="child"/> is not a direct child of this view.
+    /// </exception>
+    /// <remarks>
+    /// Called by <see cref="TuiGroup.BringToFront"/>. Callers are responsible
+    /// for invoking <see cref="Invalidate"/> when a repaint is required.
+    /// </remarks>
+    internal void MoveChildToFront(TuiView child)
+    {
+        ArgumentNullException.ThrowIfNull(child);
+
+        if (!_children.Remove(child))
+            throw new InvalidOperationException(
+                $"View '{child.GetType().Name}' is not a direct child of this view.");
+
+        _children.Add(child);
+    }
+
     // ── Internal dirty-flag reset (used by the render pass) ───────────────────
 
     /// <summary>
@@ -227,6 +282,10 @@ public abstract class TuiView
     /// <b>Coordinate contract:</b> draw relative to <see cref="AbsCol"/> /
     /// <see cref="AbsRow"/>. Do not assume <c>(0, 0)</c> is the view's origin.
     /// <para/>
+    /// <b>Clipping:</b> if the view paints effects outside its declared bounds
+    /// (e.g. drop shadows), it is the view's own responsibility to manage
+    /// <see cref="TuiRenderContext.PushClip"/>/<see cref="TuiRenderContext.PopClip"/>
+    /// for its interior content.
     /// <b>Do not call this method directly</b> from application code.
     /// The message loop calls it automatically. Use <see cref="Invalidate"/>
     /// to request a redraw.

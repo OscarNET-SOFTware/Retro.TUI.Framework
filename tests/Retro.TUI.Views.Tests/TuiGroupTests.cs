@@ -111,6 +111,125 @@ public sealed class TuiGroupTests
         Assert.Throws<ArgumentNullException>(() => group.Remove(null!));
     }
 
+    // ── IsFrontmost ────────────────────────────────────────────────────────────
+
+    [Fact]
+    public void IsFrontmost_NullChild_ThrowsArgumentNullException()
+    {
+        var group = new TuiGroup();
+
+        Assert.Throws<ArgumentNullException>(() => group.IsFrontmost(null!));
+    }
+
+    [Fact]
+    public void IsFrontmost_EmptyGroup_ReturnsFalse()
+    {
+        var group = new TuiGroup();
+        var view = new StubView();
+
+        Assert.False(group.IsFrontmost(view));
+    }
+
+    [Fact]
+    public void IsFrontmost_OnlyChild_ReturnsTrue()
+    {
+        var group = new TuiGroup();
+        var child = new StubView();
+        group.Add(child);
+
+        Assert.True(group.IsFrontmost(child));
+    }
+
+    [Fact]
+    public void IsFrontmost_LastAddedChild_ReturnsTrue()
+    {
+        var group = new TuiGroup();
+        var first = new StubView();
+        var last = new StubView();
+        group.Add(first);
+        group.Add(last);
+
+        Assert.True(group.IsFrontmost(last));
+        Assert.False(group.IsFrontmost(first));
+    }
+
+    [Fact]
+    public void IsFrontmost_ViewNotInGroup_ReturnsFalse()
+    {
+        var group = new TuiGroup();
+        var member = new StubView();
+        var outsider = new StubView();
+        group.Add(member);
+
+        Assert.False(group.IsFrontmost(outsider));
+    }
+
+    // ── BringToFront ───────────────────────────────────────────────────────────
+
+    [Fact]
+    public void BringToFront_NullChild_ThrowsArgumentNullException()
+    {
+        var group = new TuiGroup();
+
+        Assert.Throws<ArgumentNullException>(() => group.BringToFront(null!));
+    }
+
+    [Fact]
+    public void BringToFront_NonMemberChild_ThrowsInvalidOperationException()
+    {
+        var group = new TuiGroup();
+        var outsider = new StubView();
+
+        Assert.Throws<InvalidOperationException>(() => group.BringToFront(outsider));
+    }
+
+    [Fact]
+    public void BringToFront_BackChild_MakesItFrontmost()
+    {
+        var group = new TuiGroup();
+        var back = new StubView();
+        var front = new StubView();
+        group.Add(back);
+        group.Add(front);
+
+        group.BringToFront(back);
+
+        Assert.True(group.IsFrontmost(back));
+        Assert.False(group.IsFrontmost(front));
+    }
+
+    [Fact]
+    public void BringToFront_AlreadyFrontmost_IsNoOp()
+    {
+        var group = new TuiGroup();
+        var back = new StubView();
+        var front = new StubView();
+        group.Add(back);
+        group.Add(front);
+
+        // front is already frontmost — call must be a no-op (no throw, no change).
+        group.BringToFront(front);
+
+        Assert.True(group.IsFrontmost(front));
+        Assert.False(group.IsFrontmost(back));
+    }
+
+    [Fact]
+    public void BringToFront_ThreeChildren_PromotesMiddleToFront()
+    {
+        var group = new TuiGroup();
+        var a = new StubView();
+        var b = new StubView();
+        var c = new StubView();
+        group.Add(a);
+        group.Add(b);
+        group.Add(c);
+
+        group.BringToFront(b);
+
+        Assert.True(group.IsFrontmost(b));
+    }
+
     // ── FindAt — hit-testing ──────────────────────────────────────────────────
 
     [Fact]
@@ -259,5 +378,64 @@ public sealed class TuiGroupTests
         // disabled was skipped; normal was reached but did not consume.
         Assert.False(consumed);
         Assert.Null(disabled.LastEvent);
+    }
+
+    // ── Frontmost ─────────────────────────────────────────────────────────────
+
+    [Fact]
+    public void Frontmost_EmptyGroup_ReturnsNull()
+    {
+        var group = new TuiGroup();
+        Assert.Null(group.Frontmost);
+    }
+
+    [Fact]
+    public void Frontmost_SingleChild_ReturnsThatChild()
+    {
+        var group = new TuiGroup();
+        var child = new StubView();
+        group.Add(child);
+
+        Assert.Same(child, group.Frontmost);
+    }
+
+    [Fact]
+    public void Frontmost_MultipleChildren_ReturnsLastAdded()
+    {
+        var group = new TuiGroup();
+        var first = new StubView();
+        var second = new StubView();
+        group.Add(first);
+        group.Add(second);
+
+        Assert.Same(second, group.Frontmost);
+    }
+
+    [Fact]
+    public void Frontmost_AfterBringToFront_ReturnsPromotedChild()
+    {
+        var group = new TuiGroup();
+        var first = new StubView();
+        var second = new StubView();
+        group.Add(first);
+        group.Add(second);
+
+        group.BringToFront(first);
+
+        Assert.Same(first, group.Frontmost);
+    }
+
+    [Fact]
+    public void Frontmost_AfterRemoveFrontmost_ReturnsPreviousChild()
+    {
+        var group = new TuiGroup();
+        var first = new StubView();
+        var second = new StubView();
+        group.Add(first);
+        group.Add(second);
+
+        group.Remove(second);
+
+        Assert.Same(first, group.Frontmost);
     }
 }

@@ -57,6 +57,12 @@ public static class PcTools9Theme
     public static readonly SKColor EgaBrightBlue = new(0x55, 0x55, 0xFF);
 
     /// <summary>
+    /// EGA Bright Cyan — standard EGA color #11 (0x55, 0xFF, 0xFF).
+    /// Used for dialog backgrounds.
+    /// </summary>
+    public static readonly SKColor EgaBrightCyan = new(0x55, 0xFF, 0xFF);
+
+    /// <summary>
     /// Medium gray. Custom PC Tools value — not a standard EGA color.
     /// Used for the desktop background, status bar and scroll bar thumb.
     /// </summary>
@@ -139,10 +145,17 @@ public static class PcTools9Theme
                 $"Ensure 'Fonts/PxPlus_IBM_VGA_9x16.ttf' exists in the theme project " +
                 $"and is declared as EmbeddedResource with the correct LogicalName.");
 
-        return SKTypeface.FromStream(stream)
+        SKTypeface typeface = SKTypeface.FromStream(stream)
             ?? throw new InvalidOperationException(
                 $"SkiaSharp could not load a typeface from resource '{FontResourceName}'. " +
                 $"Verify that the file is a valid TrueType font.");
+
+        // Note: SKFontManager.Default.RegisterTypeface was removed in SkiaSharp 3.x.
+        // The typeface is stored in the static Typeface property and passed directly
+        // to TuiTheme.Typeface so TuiApplication.ResolveTypeface can use it without
+        // going through MatchFamily.
+
+        return typeface;
     }
 
     // ── Private: theme builder ────────────────────────────────────────────────
@@ -173,7 +186,7 @@ public static class PcTools9Theme
             [TuiColorRole.WindowShadow] = Black,
 
             // ── Dialog ────────────────────────────────────────────────────
-            [TuiColorRole.DialogBackground] = EgaBrightBlue,
+            [TuiColorRole.DialogBackground] = EgaBrightCyan,
             [TuiColorRole.DialogForeground] = White,
             [TuiColorRole.DialogBorder] = Black,
             [TuiColorRole.DialogTitleBackground] = White,
@@ -264,9 +277,10 @@ public static class PcTools9Theme
             DesktopPattern = TuiDesktopPattern.None,
             FontFamily = FontFamilyName,
             FontSize = 16f,
-            ShadowOpacity = 1.0f,
-            ShadowOffsetX = 2,
-            ShadowOffsetY = 1,
+            Typeface = Typeface,
+            ShadowOpacity = 0.65f,
+            ShadowOffsetX = 8,
+            ShadowOffsetY = 7,
         };
     }
 }

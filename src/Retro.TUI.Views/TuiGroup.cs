@@ -66,6 +66,76 @@ public class TuiGroup : TuiView
     /// </exception>
     public bool Remove(TuiView child) => RemoveChild(child);
 
+    /// <summary>
+    /// Returns whether <paramref name="child"/> is the frontmost (last-painted,
+    /// last-dispatched) direct child of this group.
+    /// </summary>
+    /// <param name="child">The view to test. Must not be <see langword="null"/>.</param>
+    /// <returns>
+    /// <see langword="true"/> if <paramref name="child"/> is the last entry in
+    /// <see cref="TuiView.Children"/>; <see langword="false"/> otherwise, including
+    /// when <paramref name="child"/> is not a direct child of this group or this
+    /// group has no children.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="child"/> is <see langword="null"/>.
+    /// </exception>
+    /// <remarks>
+    /// Used by <c>TuiWindow</c> (in <c>Retro.TUI.Windows</c>) to determine whether
+    /// it is the active (topmost) window on the desktop, since z-order is encoded
+    /// purely by position in the children list.
+    /// </remarks>
+    public bool IsFrontmost(TuiView child)
+    {
+        ArgumentNullException.ThrowIfNull(child);
+
+        return Children.Count > 0 && ReferenceEquals(Children[^1], child);
+    }
+
+    /// <summary>
+    /// Gets the frontmost (last-painted, last-dispatched) direct child of this
+    /// group, or <see langword="null"/> when the group has no children.
+    /// </summary>
+    /// <remarks>
+    /// The frontmost child is the last entry in <see cref="TuiView.Children"/>.
+    /// This is the view with the highest z-order — the one rendered on top and
+    /// the first to receive events during dispatch.
+    /// <para/>
+    /// Equivalent to <c>Children[^1]</c> when the group is non-empty.
+    /// Used by <c>TuiApplication.RunModal</c> and focus management to identify
+    /// the active top-level window without exposing the children list directly.
+    /// </remarks>
+    public TuiView? Frontmost => Children.Count > 0 ? Children[^1] : null;
+
+    /// <summary>
+    /// Brings <paramref name="child"/> to the front of the z-order, making it
+    /// the last-painted and last-dispatched direct child.
+    /// </summary>
+    /// <param name="child">The child to promote. Must not be <see langword="null"/>.</param>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="child"/> is <see langword="null"/>.
+    /// </exception>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when <paramref name="child"/> is not a direct child of this group.
+    /// </exception>
+    /// <remarks>
+    /// If <paramref name="child"/> is already the frontmost child (i.e.
+    /// <see cref="IsFrontmost"/> returns <see langword="true"/>), this method
+    /// is a no-op — no reorder and no <see cref="TuiView.Invalidate"/> call are
+    /// performed, avoiding unnecessary redraws on repeated clicks on the active
+    /// window.
+    /// </remarks>
+    public void BringToFront(TuiView child)
+    {
+        ArgumentNullException.ThrowIfNull(child);
+
+        if (IsFrontmost(child))
+            return;
+
+        MoveChildToFront(child);
+        Invalidate();
+    }
+
     // ── Hit-testing ───────────────────────────────────────────────────────────
 
     /// <summary>
@@ -123,30 +193,36 @@ public class TuiGroup : TuiView
     /// Must not be <see langword="null"/>.
     /// </param>
     /// <remarks>
-    /// Each child is drawn inside a clip rectangle that matches its own bounds,
-    /// preventing it from painting outside its declared area. The clip is pushed
-    /// before calling the child's <see cref="TuiView.Draw"/> and popped immediately
-    /// after, so the stack is always balanced even if <c>Draw</c> throws.
+    /// Each child is responsible for its own clipping. This method iterates
+    /// children back-to-front and calls <see cref="TuiView.Draw"/> on each
+    /// visible child without pushing any clip rectangle.
     /// </remarks>
     public override void Draw(TuiRenderContext ctx)
     {
         ArgumentNullException.ThrowIfNull(ctx);
 
+        DrawChildViews(ctx);
+    }
+
+    /// <summary>
+    /// Draws all visible children back-to-front without pushing any clip rectangle.
+    /// </summary>
+    /// <param name="ctx">The active render context. Must not be <see langword="null"/>.</param>
+    /// <remarks>
+    /// Extracted from <see cref="Draw"/> so that subclasses that manage their own
+    /// clipping (e.g. <c>TuiWindow</c>, <c>TuiDialog</c>) can call this method
+    /// directly after applying their own <c>PushClip</c>, bypassing the virtual
+    /// dispatch of <see cref="Draw"/> which would repaint the background.
+    /// </remarks>
+    protected void DrawChildViews(TuiRenderContext ctx)
+    {
         foreach (TuiView child in Children)
         {
             if (!child.Visible)
                 continue;
 
-            ctx.PushClip(child.AbsCol, child.AbsRow, child.Width, child.Height);
-            try
-            {
-                child.Draw(ctx);
-                child.ClearDirty();
-            }
-            finally
-            {
-                ctx.PopClip();
-            }
+            child.Draw(ctx);
+            child.ClearDirty();
         }
     }
 

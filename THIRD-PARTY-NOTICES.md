@@ -8,7 +8,9 @@ in the [licenses](./licenses) folder.
 + [Microsoft.NET.Test.Sdk](#microsoftnettestsdk)
 + [PxPlus IBM VGA 9x16 Font](#pxplus-ibm-vga-9x16-font)
 + [ReportGenerator](#reportgenerator)
++ [SDL2 (Simple DirectMedia Layer)](#sdl2-simple-directmedia-layer)
 + [Silk.NET](#silknet)
++ [Skia (libSkiaSharp native)](#skia-libskiasharp-native)
 + [SkiaSharp](#skiasharp)
 + [xUnit.net v3](#xunitnet-v3)
 
@@ -66,12 +68,35 @@ Under the terms of CC BY-SA 4.0:
 
 ---
 
+## SDL2 (Simple DirectMedia Layer)
+
+- **Repository**: https://github.com/libsdl-org/SDL
+- **License**: zlib License
+- **Copyright**: © 1997–2024 Sam Lantinga
+- **Full text**: [licenses/zlib.txt](./licenses/zlib.txt)
+
+SDL2 native binaries are distributed as part of the `Silk.NET.SDL` NuGet package.
+
+---
+
 ## Silk.NET
 
 - **Repository**: https://github.com/dotnet/Silk.NET
 - **License**: MIT License
 - **Copyright**: © Ultz Limited and .NET Foundation Contributors
 - **Full text**: [licenses/mit.txt](./licenses/mit.txt)
+
+---
+
+## Skia (libSkiaSharp native)
+
+- **Repository**: https://skia.org / https://github.com/google/skia
+- **License**: BSD 3-Clause License
+- **Copyright**: © 2011 Google Inc.
+- **Full text**: [licenses/bsd-3-clause.txt](./licenses/bsd-3-clause.txt)
+
+The `SkiaSharp.NativeAssets.*` packages distribute `libSkiaSharp`, a native
+shared library that wraps the Skia graphics engine developed by Google.
 
 ---
 
