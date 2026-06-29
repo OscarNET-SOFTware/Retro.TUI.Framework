@@ -577,7 +577,7 @@ public sealed class TuiRenderContext : IDisposable
     }
 
     /// <summary>
-    /// Builds the 12×19 pixel-art mouse pointer bitmap using the active theme's
+    /// Builds the 12×20 pixel-art mouse pointer bitmap using the active theme's
     /// <see cref="TuiColorRole.MouseCursorFill"/> and
     /// <see cref="TuiColorRole.MouseCursorOutline"/> colors.
     /// </summary>
@@ -600,19 +600,20 @@ public sealed class TuiRenderContext : IDisposable
             2, 1, 1, 1, 1, 1, 1, 1, 2, 0, 0, 0,
             2, 1, 1, 1, 1, 1, 1, 1, 1, 2, 0, 0,
             2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 0,
-            2, 1, 1, 1, 1, 1, 1, 2, 2, 1, 1, 2,
-            2, 1, 1, 2, 2, 1, 1, 2, 0, 2, 2, 2,
+            2, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2,
+            2, 1, 1, 1, 2, 1, 1, 2, 0, 0, 0, 0,
             2, 1, 1, 2, 2, 1, 1, 2, 0, 0, 0, 0,
-            2, 1, 2, 0, 2, 1, 1, 1, 2, 0, 0, 0,
-            2, 2, 2, 0, 0, 2, 1, 1, 2, 0, 0, 0,
-            0, 0, 0, 0, 0, 2, 1, 1, 1, 2, 0, 0,
+            2, 1, 2, 0, 2, 2, 1, 1, 2, 0, 0, 0,
+            2, 2, 0, 0, 0, 2, 1, 1, 2, 0, 0, 0,
+            2, 0, 0, 0, 0, 0, 2, 1, 1, 2, 0, 0,
             0, 0, 0, 0, 0, 0, 2, 1, 1, 2, 0, 0,
-            0, 0, 0, 0, 0, 0, 2, 1, 1, 2, 0, 0,
-            0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 2, 1, 1, 2, 0,
+            0, 0, 0, 0, 0, 0, 0, 2, 1, 1, 2, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 0, 0,
         ];
 
         const int width = 12;
-        const int height = 19;
+        const int height = 20;
 
         SKColor fill = ResolveColor(TuiColorRole.MouseCursorFill);
         SKColor outline = ResolveColor(TuiColorRole.MouseCursorOutline);
