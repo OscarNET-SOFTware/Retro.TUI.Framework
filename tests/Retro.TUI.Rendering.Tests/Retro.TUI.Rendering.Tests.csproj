@@ -8,7 +8,6 @@
     <PackageReference Include="SkiaSharp" />
     <ProjectReference Include="..\..\src\Retro.TUI.Rendering\Retro.TUI.Rendering.csproj" />
     <ProjectReference Include="..\..\src\Retro.TUI.Theming\Retro.TUI.Theming.csproj" />
-    <ProjectReference Include="..\..\themes\Retro.TUI.Theme.PcTools9\Retro.TUI.Theme.PcTools9.csproj" />
   </ItemGroup>
 
 </Project>

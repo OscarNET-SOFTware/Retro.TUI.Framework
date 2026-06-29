@@ -20,7 +20,4 @@
     <Project Path="tests/Retro.TUI.Views.Tests/Retro.TUI.Views.Tests.csproj" />
     <Project Path="tests/Retro.TUI.Windows.Tests/Retro.TUI.Windows.Tests.csproj" />
   </Folder>
-  <Folder Name="/themes/">
-    <Project Path="themes/Retro.TUI.Theme.PcTools9/Retro.TUI.Theme.PcTools9.csproj" />
-  </Folder>
 </Solution>

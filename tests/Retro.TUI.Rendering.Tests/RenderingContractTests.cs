@@ -277,21 +277,14 @@ public sealed class TuiRenderContextTests
     public void Constructor_NullGrid_ThrowsArgumentNullException()
     {
         Assert.Throws<ArgumentNullException>(() =>
-            new TuiRenderContext(null!, new TuiFont(), BuildMinimalTheme()));
+            new TuiRenderContext(null!, new TuiFont()));
     }
 
     [Fact]
     public void Constructor_NullFont_ThrowsArgumentNullException()
     {
         Assert.Throws<ArgumentNullException>(() =>
-            new TuiRenderContext(new TuiGrid(), null!, BuildMinimalTheme()));
-    }
-
-    [Fact]
-    public void Constructor_NullTheme_ThrowsArgumentNullException()
-    {
-        Assert.Throws<ArgumentNullException>(() =>
-            new TuiRenderContext(new TuiGrid(), new TuiFont(), null!));
+            new TuiRenderContext(new TuiGrid(), null!));
     }
 
     // ── Frame lifecycle ───────────────────────────────────────────────────
@@ -479,8 +472,8 @@ public sealed class TuiRenderContextTests
     /// </summary>
     private static TuiRenderContext BuildContext(int cols, int rows)
     {
-        int screenW = cols * 9;   // 9 px cell width (IBM VGA nominal)
-        int screenH = rows * 16;  // 16 px cell height
+        int screenW = cols * 9;
+        int screenH = rows * 16;
 
         using var skFont = new SKFont(SKTypeface.Default, 16f);
         var grid = new TuiGrid();
@@ -488,26 +481,7 @@ public sealed class TuiRenderContextTests
 
         var font = new TuiFont();
         font.Load(SKTypeface.Default, 16f);
-        var theme = BuildMinimalTheme();
 
-        return new TuiRenderContext(grid, font, theme);
-    }
-
-    /// <summary>
-    /// Builds a minimal <see cref="TuiTheme"/> that maps every
-    /// <see cref="TuiColorRole"/> to a distinct non-default color so that
-    /// palette resolution failures surface during tests.
-    /// </summary>
-    private static TuiTheme BuildMinimalTheme()
-    {
-        var colors = new Dictionary<TuiColorRole, SKColor>();
-        foreach (TuiColorRole role in Enum.GetValues<TuiColorRole>())
-            colors[role] = SKColors.Black;
-
-        return new TuiTheme
-        {
-            Name = "TestTheme",
-            Palette = new TuiPalette(colors),
-        };
+        return new TuiRenderContext(grid, font);
     }
 }

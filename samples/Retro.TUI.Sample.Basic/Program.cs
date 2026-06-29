@@ -15,17 +15,11 @@
 
 using Retro.TUI.Hosting;
 using Retro.TUI.Sample.Basic;
-using Retro.TUI.Theme.PcTools9;
 
-// Force the theme assembly to load and register the IBM VGA font with
-// SKFontManager before TuiApplication.Run resolves the typeface.
-_ = PcTools9Theme.Instance;
- 
 using var app = new BasicApp();
 
 app.Run(
     host: new SdlHost(),
-    theme: PcTools9Theme.Instance,
     options: new TuiHostOptions
     {
     Title   = "Retro.TUI.Framework — Basic Sample",

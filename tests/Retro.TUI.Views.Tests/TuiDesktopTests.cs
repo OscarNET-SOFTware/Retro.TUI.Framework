@@ -15,7 +15,6 @@
 
 using Retro.TUI.Events;
 using Retro.TUI.Rendering;
-using Retro.TUI.Theming;
 
 using SkiaSharp;
 
@@ -250,17 +249,7 @@ public sealed class TuiDesktopTests
         var font = new TuiFont();
         font.Load(SKTypeface.Default, 16f);
 
-        var colors = new Dictionary<TuiColorRole, SKColor>();
-        foreach (TuiColorRole role in Enum.GetValues<TuiColorRole>())
-            colors[role] = SKColors.Black;
-
-        var theme = new TuiTheme
-        {
-            Name = "TestTheme",
-            Palette = new TuiPalette(colors),
-        };
-
-        using var ctx = new TuiRenderContext(grid, font, theme);
+        using var ctx = new TuiRenderContext(grid, font);
         ctx.RenderFrame(surface, _ => desktop.Draw(ctx));
     }
 

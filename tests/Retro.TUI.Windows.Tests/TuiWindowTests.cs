@@ -538,26 +538,7 @@ public sealed class TuiWindowTests
 
         var font = new TuiFont();
         font.Load(SKTypeface.Default, 16f);
-        var theme = BuildMinimalTheme();
 
-        return new TuiRenderContext(grid, font, theme);
-    }
-
-    /// <summary>
-    /// Builds a minimal <see cref="TuiTheme"/> that maps every
-    /// <see cref="TuiColorRole"/> to a distinct non-default color so that
-    /// palette resolution failures surface during tests.
-    /// </summary>
-    private static TuiTheme BuildMinimalTheme()
-    {
-        var colors = new Dictionary<TuiColorRole, SKColor>();
-        foreach (TuiColorRole role in Enum.GetValues<TuiColorRole>())
-            colors[role] = SKColors.Black;
-
-        return new TuiTheme
-        {
-            Name = "TestTheme",
-            Palette = new TuiPalette(colors),
-        };
+        return new TuiRenderContext(grid, font);
     }
 }

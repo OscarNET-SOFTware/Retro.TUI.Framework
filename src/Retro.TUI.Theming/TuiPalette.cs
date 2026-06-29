@@ -18,84 +18,24 @@ using SkiaSharp;
 namespace Retro.TUI.Theming;
 
 /// <summary>
-/// An immutable map from <see cref="TuiColorRole"/> values to concrete <see cref="SKColor"/> instances.
+/// Provides color resolution for all <see cref="TuiColorRole"/> values
+/// using the framework's fixed EGA-based color scheme.
 /// </summary>
 /// <remarks>
-/// A palette is always fully populated: every <see cref="TuiColorRole"/> defined in the enum
-/// must have a corresponding entry. Theme authors should use <see cref="TuiTheme"/> to construct
-/// and validate a complete palette before use.
-/// <para/>
-/// Instances are immutable after construction. To produce a modified copy, use <see cref="With"/>.
+/// The color scheme is fixed and cannot be customized at runtime.
+/// All 16 base colors are defined in <see cref="TuiEgaPalette"/>.
+/// The mapping from semantic roles to concrete colors is defined in
+/// <see cref="TuiColorMap"/>.
 /// </remarks>
-public sealed class TuiPalette
+public static class TuiPalette
 {
-    private readonly Dictionary<TuiColorRole, SKColor> _colors;
-
     /// <summary>
-    /// Initializes a new <see cref="TuiPalette"/> with the provided color map.
+    /// Resolves the <see cref="SKColor"/> assigned to <paramref name="role"/>.
     /// </summary>
-    /// <param name="colors">
-    /// A dictionary mapping every <see cref="TuiColorRole"/> to a concrete <see cref="SKColor"/>.
-    /// The dictionary is copied defensively; subsequent changes to the source are not reflected.
-    /// </param>
-    /// <exception cref="ArgumentNullException">
-    /// Thrown when <paramref name="colors"/> is <see langword="null"/>.
-    /// </exception>
-    public TuiPalette(IReadOnlyDictionary<TuiColorRole, SKColor> colors)
-    {
-        ArgumentNullException.ThrowIfNull(colors);
-        _colors = new Dictionary<TuiColorRole, SKColor>(colors);
-    }
-
-    /// <summary>
-    /// Returns the <see cref="SKColor"/> assigned to the specified <paramref name="role"/>.
-    /// </summary>
-    /// <param name="role">The color role to resolve.</param>
-    /// <returns>The concrete color for the given role.</returns>
+    /// <param name="role">The semantic color role to resolve.</param>
+    /// <returns>The <see cref="SKColor"/> mapped to <paramref name="role"/>.</returns>
     /// <exception cref="KeyNotFoundException">
-    /// Thrown when <paramref name="role"/> has no entry in this palette.
-    /// Use <see cref="GetOrDefault"/> for a safe lookup with a fallback.
+    /// Thrown when <paramref name="role"/> has no entry in the color map.
     /// </exception>
-    public SKColor this[TuiColorRole role] => _colors[role];
-
-    /// <summary>
-    /// Attempts to return the <see cref="SKColor"/> assigned to <paramref name="role"/>.
-    /// Returns <paramref name="fallback"/> if the role is not present in this palette.
-    /// </summary>
-    /// <param name="role">The color role to resolve.</param>
-    /// <param name="fallback">
-    /// The color to return when <paramref name="role"/> is not found.
-    /// Defaults to <see cref="SKColor.Empty"/>.
-    /// </param>
-    /// <returns>
-    /// The color for <paramref name="role"/>, or <paramref name="fallback"/> if not found.
-    /// </returns>
-    public SKColor GetOrDefault(TuiColorRole role, SKColor fallback = default) =>
-        _colors.TryGetValue(role, out SKColor color) ? color : fallback;
-
-    /// <summary>
-    /// Creates a new <see cref="TuiPalette"/> that is identical to this one except that
-    /// the roles present in <paramref name="overrides"/> are replaced with their new values.
-    /// </summary>
-    /// <param name="overrides">
-    /// A dictionary containing only the roles whose colors should change.
-    /// Roles not present in <paramref name="overrides"/> are copied unchanged.
-    /// </param>
-    /// <returns>A new <see cref="TuiPalette"/> instance with the overrides applied.</returns>
-    /// <exception cref="ArgumentNullException">
-    /// Thrown when <paramref name="overrides"/> is <see langword="null"/>.
-    /// </exception>
-    public TuiPalette With(IReadOnlyDictionary<TuiColorRole, SKColor> overrides)
-    {
-        ArgumentNullException.ThrowIfNull(overrides);
-
-        var merged = new Dictionary<TuiColorRole, SKColor>(_colors);
-
-        foreach (KeyValuePair<TuiColorRole, SKColor> entry in overrides)
-        {
-            merged[entry.Key] = entry.Value;
-        }
-
-        return new TuiPalette(merged);
-    }
+    public static SKColor Resolve(TuiColorRole role) => TuiColorMap.Resolve(role);
 }

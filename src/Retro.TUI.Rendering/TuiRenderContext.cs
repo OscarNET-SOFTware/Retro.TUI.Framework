@@ -45,39 +45,30 @@ public sealed class TuiRenderContext : IDisposable
     private readonly SKPaint _textPaint = new() { IsAntialias = false };
 
     /// <summary>
-    /// Lazily-built bitmap for <see cref="DrawMouseCursor"/>, rendered once using
-    /// the <see cref="TuiColorRole.MouseCursorFill"/> and
-    /// <see cref="TuiColorRole.MouseCursorOutline"/> colors resolved at first draw.
+    /// Lazily-built bitmap for <see cref="DrawMouseCursor"/>, rendered once
+    /// using the <see cref="TuiColorRole.MouseCursorFill"/> and
+    /// <see cref="TuiColorRole.MouseCursorOutline"/> colors.
     /// </summary>
-    /// <remarks>
-    /// TODO: <c>_cursorBitmap</c> is cached with colors resolved at first draw.
-    /// If <c>CurrentTheme</c> changes at runtime, the cursor will retain stale
-    /// colors until this <see cref="TuiRenderContext"/> is recreated. Revisit if
-    /// hot theme-switching becomes a supported scenario.
-    /// </remarks>
     private SKBitmap? _cursorBitmap;
 
     // ── Construction ──────────────────────────────────────────────────────────
 
     /// <summary>
     /// Initializes a new <see cref="TuiRenderContext"/> with the specified
-    /// grid metrics, font and theme.
+    /// grid metrics and font.
     /// </summary>
     /// <param name="grid">The character grid metrics for this session.</param>
     /// <param name="font">The loaded framework font.</param>
-    /// <param name="theme">The active visual theme.</param>
     /// <exception cref="ArgumentNullException">
     /// Thrown when any argument is <see langword="null"/>.
     /// </exception>
-    public TuiRenderContext(TuiGrid grid, TuiFont font, TuiTheme theme)
+    public TuiRenderContext(TuiGrid grid, TuiFont font)
     {
         ArgumentNullException.ThrowIfNull(grid);
         ArgumentNullException.ThrowIfNull(font);
-        ArgumentNullException.ThrowIfNull(theme);
 
         Grid = grid;
         Font = font;
-        Theme = theme;
     }
 
     // ── Public properties ─────────────────────────────────────────────────────
@@ -87,9 +78,6 @@ public sealed class TuiRenderContext : IDisposable
 
     /// <summary>Gets the loaded framework font.</summary>
     public TuiFont Font { get; }
-
-    /// <summary>Gets the active visual theme.</summary>
-    public TuiTheme Theme { get; }
 
     // ── Internal frame lifecycle (NOT part of the public API) ─────────────────
 
@@ -431,7 +419,7 @@ public sealed class TuiRenderContext : IDisposable
         RequireCanvas();
 
         SKColor baseColor = ResolveColor(TuiColorRole.WindowShadow);
-        byte alpha = (byte)(255 * Math.Clamp(Theme.ShadowOpacity, 0f, 1f));
+        byte alpha = (byte)(255 * Math.Clamp(TuiTheme.ShadowOpacity, 0f, 1f));
         SKColor shadowColor = baseColor.WithAlpha(alpha);
 
         // Convert element bounds to pixels.
@@ -441,8 +429,8 @@ public sealed class TuiRenderContext : IDisposable
         float ph = height * Grid.CellHeight;
 
         // Shadow offsets are in pixels (not grid cells).
-        float ox = Theme.ShadowOffsetX;
-        float oy = Theme.ShadowOffsetY;
+        float ox = TuiTheme.ShadowOffsetX;
+        float oy = TuiTheme.ShadowOffsetY;
 
         _fillPaint.Color = shadowColor;
 
@@ -545,7 +533,7 @@ public sealed class TuiRenderContext : IDisposable
     /// Pixel values: <c>0</c> = transparent, <c>1</c> = fill, <c>2</c> = outline.
     /// Called once and cached in <see cref="_cursorBitmap"/>.
     /// </remarks>
-    private SKBitmap BuildCursorBitmap()
+    private static SKBitmap BuildCursorBitmap()
     {
         // 0 = transparent, 1 = fill, 2 = outline.
         ReadOnlySpan<byte> pixels =
@@ -612,10 +600,10 @@ public sealed class TuiRenderContext : IDisposable
 
     /// <summary>
     /// Resolves a <see cref="TuiColorRole"/> to its concrete <see cref="SKColor"/>
-    /// using the active theme palette.
+    /// using the fixed EGA-based color map.
     /// </summary>
-    private SKColor ResolveColor(TuiColorRole role)
-        => Theme.Palette.GetOrDefault(role);
+    private static SKColor ResolveColor(TuiColorRole role)
+        => TuiPalette.Resolve(role);
 
     /// <summary>
     /// Fills a rectangle specified in grid coordinates using <see cref="_fillPaint"/>.

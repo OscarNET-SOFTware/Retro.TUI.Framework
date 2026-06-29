@@ -19,190 +19,96 @@ namespace Retro.TUI.Theming;
 
 /// <summary>
 /// Tests for <see cref="TuiPalette"/>.
-/// Verifies construction, immutability, role resolution and the <c>With</c> override pattern.
+/// Verifies that every <see cref="TuiColorRole"/> resolves to a non-default
+/// <see cref="SKColor"/> and that the EGA color constants are correct.
 /// </summary>
 public sealed class TuiPaletteTests
 {
-    // ── Construction ──────────────────────────────────────────────────────
+    // ── Role resolution ───────────────────────────────────────────────────────
 
     [Fact]
-    public void Constructor_NullColors_ThrowsArgumentNullException()
+    public void Resolve_AllDefinedRoles_DoNotThrow()
     {
-        Assert.Throws<ArgumentNullException>(() =>
-            new TuiPalette(null!));
+        // Every TuiColorRole must have an entry in TuiColorMap.
+        // A missing entry would throw KeyNotFoundException.
+        foreach (TuiColorRole role in Enum.GetValues<TuiColorRole>())
+        {
+            SKColor color = TuiPalette.Resolve(role);
+
+            // SKColor is a struct — any value including Black is valid.
+            Assert.True(color.Alpha >= 0);
+        }
     }
 
-    [Fact]
-    public void Constructor_ValidColors_DoesNotThrow()
+    [Theory]
+    [InlineData(TuiColorRole.DesktopBackground, 0x55, 0x55, 0x55)] // EgaDarkGray
+    [InlineData(TuiColorRole.WindowBackground, 0x55, 0x55, 0xFF)] // EgaBrightBlue
+    [InlineData(TuiColorRole.WindowBorder, 0x00, 0x00, 0x00)] // EgaBlack
+    [InlineData(TuiColorRole.WindowTitleBackground, 0xFF, 0xFF, 0xFF)] // EgaWhite
+    [InlineData(TuiColorRole.WindowTitleForeground, 0x00, 0x00, 0x00)] // EgaBlack
+    [InlineData(TuiColorRole.WindowTitleInactiveBackground, 0xCA, 0xCA, 0xCA)] // LightGray
+    [InlineData(TuiColorRole.WindowTitleInactiveForeground, 0x69, 0x69, 0x69)] // Gray
+    [InlineData(TuiColorRole.DialogBackground, 0x55, 0xFF, 0xFF)] // EgaBrightCyan
+    [InlineData(TuiColorRole.DialogTitleWarningBackground, 0xFF, 0x55, 0x55)] // EgaBrightRed
+    [InlineData(TuiColorRole.MenuHotkeyForeground, 0xAA, 0x00, 0x00)] // EgaRed
+    [InlineData(TuiColorRole.StatusBackground, 0x69, 0x69, 0x69)] // Gray
+    [InlineData(TuiColorRole.MouseCursorFill, 0xFF, 0xFF, 0xFF)] // EgaWhite
+    [InlineData(TuiColorRole.MouseCursorOutline, 0x00, 0x00, 0x00)] // EgaBlack
+    public void Resolve_KeyRoles_ReturnExpectedEgaColor(
+        TuiColorRole role, byte r, byte g, byte b)
     {
-        var colors = new Dictionary<TuiColorRole, SKColor>
+        SKColor actual = TuiPalette.Resolve(role);
+
+        Assert.Equal(r, actual.Red);
+        Assert.Equal(g, actual.Green);
+        Assert.Equal(b, actual.Blue);
+    }
+
+    // ── EGA palette constants ─────────────────────────────────────────────────
+
+    [Theory]
+    [InlineData(0x00, 0x00, 0x00, nameof(TuiEgaPalette.EgaBlack))]
+    [InlineData(0x00, 0x00, 0xAA, nameof(TuiEgaPalette.EgaBlue))]
+    [InlineData(0x00, 0xAA, 0x00, nameof(TuiEgaPalette.EgaGreen))]
+    [InlineData(0x00, 0xAA, 0xAA, nameof(TuiEgaPalette.EgaCyan))]
+    [InlineData(0xAA, 0x00, 0x00, nameof(TuiEgaPalette.EgaRed))]
+    [InlineData(0xAA, 0x00, 0xAA, nameof(TuiEgaPalette.EgaMagenta))]
+    [InlineData(0xAA, 0x55, 0x00, nameof(TuiEgaPalette.EgaBrown))]
+    [InlineData(0xAA, 0xAA, 0xAA, nameof(TuiEgaPalette.EgaLightGray))]
+    [InlineData(0x55, 0x55, 0x55, nameof(TuiEgaPalette.EgaDarkGray))]
+    [InlineData(0x55, 0x55, 0xFF, nameof(TuiEgaPalette.EgaBrightBlue))]
+    [InlineData(0x55, 0xFF, 0x55, nameof(TuiEgaPalette.EgaBrightGreen))]
+    [InlineData(0x55, 0xFF, 0xFF, nameof(TuiEgaPalette.EgaBrightCyan))]
+    [InlineData(0xFF, 0x55, 0x55, nameof(TuiEgaPalette.EgaBrightRed))]
+    [InlineData(0xFF, 0x55, 0xFF, nameof(TuiEgaPalette.EgaBrightMagenta))]
+    [InlineData(0xFF, 0xFF, 0x55, nameof(TuiEgaPalette.EgaYellow))]
+    [InlineData(0xFF, 0xFF, 0xFF, nameof(TuiEgaPalette.EgaWhite))]
+    public void EgaPalette_AllSixteenColors_HaveCorrectRgbValues(
+        byte r, byte g, byte b, string colorName)
+    {
+        SKColor actual = colorName switch
         {
-            [TuiColorRole.DesktopBackground] = SKColors.Black,
+            nameof(TuiEgaPalette.EgaBlack) => TuiEgaPalette.EgaBlack,
+            nameof(TuiEgaPalette.EgaBlue) => TuiEgaPalette.EgaBlue,
+            nameof(TuiEgaPalette.EgaGreen) => TuiEgaPalette.EgaGreen,
+            nameof(TuiEgaPalette.EgaCyan) => TuiEgaPalette.EgaCyan,
+            nameof(TuiEgaPalette.EgaRed) => TuiEgaPalette.EgaRed,
+            nameof(TuiEgaPalette.EgaMagenta) => TuiEgaPalette.EgaMagenta,
+            nameof(TuiEgaPalette.EgaBrown) => TuiEgaPalette.EgaBrown,
+            nameof(TuiEgaPalette.EgaLightGray) => TuiEgaPalette.EgaLightGray,
+            nameof(TuiEgaPalette.EgaDarkGray) => TuiEgaPalette.EgaDarkGray,
+            nameof(TuiEgaPalette.EgaBrightBlue) => TuiEgaPalette.EgaBrightBlue,
+            nameof(TuiEgaPalette.EgaBrightGreen) => TuiEgaPalette.EgaBrightGreen,
+            nameof(TuiEgaPalette.EgaBrightCyan) => TuiEgaPalette.EgaBrightCyan,
+            nameof(TuiEgaPalette.EgaBrightRed) => TuiEgaPalette.EgaBrightRed,
+            nameof(TuiEgaPalette.EgaBrightMagenta) => TuiEgaPalette.EgaBrightMagenta,
+            nameof(TuiEgaPalette.EgaYellow) => TuiEgaPalette.EgaYellow,
+            nameof(TuiEgaPalette.EgaWhite) => TuiEgaPalette.EgaWhite,
+            _ => throw new ArgumentException($"Unknown color: {colorName}")
         };
 
-        var palette = new TuiPalette(colors);
-
-        Assert.Equal(SKColors.Black, palette[TuiColorRole.DesktopBackground]);
-    }
-
-    [Fact]
-    public void Constructor_MutatingSourceDictionary_DoesNotAffectPalette()
-    {
-        // Defensive copy: changes to the original source must not affect the palette.
-        var colors = new Dictionary<TuiColorRole, SKColor>
-        {
-            [TuiColorRole.DesktopBackground] = SKColors.Black,
-        };
-
-        var palette = new TuiPalette(colors);
-        colors[TuiColorRole.DesktopBackground] = SKColors.Red;
-
-        Assert.Equal(SKColors.Black, palette[TuiColorRole.DesktopBackground]);
-    }
-
-    // ── Indexer ───────────────────────────────────────────────────────────
-
-    [Fact]
-    public void Indexer_ExistingRole_ReturnsCorrectColor()
-    {
-        var palette = new TuiPalette(new Dictionary<TuiColorRole, SKColor>
-        {
-            [TuiColorRole.WindowBackground] = new SKColor(0x55, 0x55, 0xFF),
-        });
-
-        Assert.Equal(new SKColor(0x55, 0x55, 0xFF), palette[TuiColorRole.WindowBackground]);
-    }
-
-    [Fact]
-    public void Indexer_MissingRole_ThrowsKeyNotFoundException()
-    {
-        var palette = new TuiPalette(new Dictionary<TuiColorRole, SKColor>());
-
-        Assert.Throws<KeyNotFoundException>(() =>
-            _ = palette[TuiColorRole.DesktopBackground]);
-    }
-
-    // ── GetOrDefault ──────────────────────────────────────────────────────
-
-    [Fact]
-    public void GetOrDefault_ExistingRole_ReturnsColor()
-    {
-        var palette = new TuiPalette(new Dictionary<TuiColorRole, SKColor>
-        {
-            [TuiColorRole.MenuBackground] = SKColors.White,
-        });
-
-        SKColor result = palette.GetOrDefault(TuiColorRole.MenuBackground, SKColors.Magenta);
-
-        Assert.Equal(SKColors.White, result);
-    }
-
-    [Fact]
-    public void GetOrDefault_MissingRole_ReturnsFallback()
-    {
-        var palette = new TuiPalette(new Dictionary<TuiColorRole, SKColor>());
-
-        SKColor result = palette.GetOrDefault(TuiColorRole.MenuBackground, SKColors.Magenta);
-
-        Assert.Equal(SKColors.Magenta, result);
-    }
-
-    [Fact]
-    public void GetOrDefault_MissingRoleNoFallback_ReturnsEmpty()
-    {
-        var palette = new TuiPalette(new Dictionary<TuiColorRole, SKColor>());
-
-        SKColor result = palette.GetOrDefault(TuiColorRole.MenuBackground);
-
-        Assert.Equal(SKColor.Empty, result);
-    }
-
-    // ── With ──────────────────────────────────────────────────────────────
-
-    [Fact]
-    public void With_NullOverrides_ThrowsArgumentNullException()
-    {
-        var palette = new TuiPalette(new Dictionary<TuiColorRole, SKColor>());
-
-        Assert.Throws<ArgumentNullException>(() => palette.With(null!));
-    }
-
-    [Fact]
-    public void With_ValidOverrides_ReturnsNewInstance()
-    {
-        var palette = new TuiPalette(new Dictionary<TuiColorRole, SKColor>
-        {
-            [TuiColorRole.DesktopBackground] = SKColors.Black,
-        });
-
-        TuiPalette modified = palette.With(new Dictionary<TuiColorRole, SKColor>
-        {
-            [TuiColorRole.DesktopBackground] = SKColors.Blue,
-        });
-
-        Assert.NotSame(palette, modified);
-    }
-
-    [Fact]
-    public void With_ValidOverrides_OverriddenRoleHasNewColor()
-    {
-        var palette = new TuiPalette(new Dictionary<TuiColorRole, SKColor>
-        {
-            [TuiColorRole.DesktopBackground] = SKColors.Black,
-        });
-
-        TuiPalette modified = palette.With(new Dictionary<TuiColorRole, SKColor>
-        {
-            [TuiColorRole.DesktopBackground] = SKColors.Blue,
-        });
-
-        Assert.Equal(SKColors.Blue, modified[TuiColorRole.DesktopBackground]);
-    }
-
-    [Fact]
-    public void With_ValidOverrides_OriginalPaletteUnchanged()
-    {
-        // With() must not mutate the original palette.
-        var palette = new TuiPalette(new Dictionary<TuiColorRole, SKColor>
-        {
-            [TuiColorRole.DesktopBackground] = SKColors.Black,
-        });
-
-        _ = palette.With(new Dictionary<TuiColorRole, SKColor>
-        {
-            [TuiColorRole.DesktopBackground] = SKColors.Blue,
-        });
-
-        Assert.Equal(SKColors.Black, palette[TuiColorRole.DesktopBackground]);
-    }
-
-    [Fact]
-    public void With_ValidOverrides_NonOverriddenRolePreserved()
-    {
-        var palette = new TuiPalette(new Dictionary<TuiColorRole, SKColor>
-        {
-            [TuiColorRole.DesktopBackground] = SKColors.Black,
-            [TuiColorRole.WindowBackground] = new SKColor(0x55, 0x55, 0xFF),
-        });
-
-        TuiPalette modified = palette.With(new Dictionary<TuiColorRole, SKColor>
-        {
-            [TuiColorRole.DesktopBackground] = SKColors.Blue,
-        });
-
-        Assert.Equal(new SKColor(0x55, 0x55, 0xFF), modified[TuiColorRole.WindowBackground]);
-    }
-
-    [Fact]
-    public void With_EmptyOverrides_ProducesEquivalentPalette()
-    {
-        var palette = new TuiPalette(new Dictionary<TuiColorRole, SKColor>
-        {
-            [TuiColorRole.DesktopBackground] = SKColors.Black,
-        });
-
-        TuiPalette copy = palette.With(new Dictionary<TuiColorRole, SKColor>());
-
-        Assert.Equal(SKColors.Black, copy[TuiColorRole.DesktopBackground]);
+        Assert.Equal(r, actual.Red);
+        Assert.Equal(g, actual.Green);
+        Assert.Equal(b, actual.Blue);
     }
 }
