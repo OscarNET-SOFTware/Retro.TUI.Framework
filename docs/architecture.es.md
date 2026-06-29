@@ -196,170 +196,60 @@ public sealed class TuiEventQueue : IDisposable
 **Namespace raíz**: `Retro.TUI.Theming`  
 **Dependencias**: ninguna del framework (solo SkiaSharp para `SKColor`).
 
-Esta capa define el sistema de temas completo. Ningún control ni vista tiene
-colores o fuentes *hardcodeados*: siempre consultan el tema activo.
+Esta capa define el esquema de color fijo y los parámetros de tipografía. Ningún
+control ni vista tiene colores *hardcodeados*: siempre resuelven a través de
+`TuiPalette.Resolve`.
 
 ### 2.1 TuiColorRole
 
 Enum semántico que nombra cada rol visual del framework.
-Es independiente de cualquier color concreto.
+Independiente de cualquier valor de color concreto.
 
-```csharp
-public enum TuiColorRole
-{
-    // Escritorio
-    DesktopBackground,
+[mismo bloque de código que en architecture.md]
 
-    // Barra de título de aplicación
-    AppTitleBackground,
-    AppTitleForeground,
-
-    // Ventana
-    WindowBackground,
-    WindowForeground,
-    WindowBorder,
-    WindowTitleBackground,
-    WindowTitleForeground,
-    WindowShadow,
-
-    // Diálogo
-    DialogBackground,
-    DialogForeground,
-    DialogBorder,
-    DialogTitleBackground,
-    DialogTitleForeground,
-
-    // Menú
-    MenuBackground,
-    MenuForeground,
-    MenuSelectedBackground,
-    MenuSelectedForeground,
-    MenuDisabledForeground,
-    MenuSeparator,
-
-    // Barra de estado
-    StatusBackground,
-    StatusForeground,
-    StatusKeyBackground,
-    StatusKeyForeground,
-
-    // Controles de formulario
-    LabelForeground,
-    LabelBackground,
-    InputBackground,
-    InputForeground,
-    InputFocusBackground,
-    InputFocusForeground,
-    InputSelectionBackground,
-    InputSelectionForeground,
-
-    // Botón
-    ButtonBackground,
-    ButtonForeground,
-    ButtonFocusBackground,
-    ButtonFocusForeground,
-    ButtonShadow,
-
-    // CheckBox / RadioButton
-    CheckBackground,
-    CheckForeground,
-    CheckFocusBackground,
-    CheckFocusForeground,
-    CheckMarkColor,
-
-    // ListBox
-    ListBackground,
-    ListForeground,
-    ListSelectedBackground,
-    ListSelectedForeground,
-
-    // ScrollBar
-    ScrollBarBackground,
-    ScrollBarThumb,
-    ScrollBarArrow,
-}
-```
-> Para el inventario completo de roles con su referencia a Turbo Vision
-> y la paleta de valores del tema PcTools9, ver
-> [`docs/theming-reference.es.md`](theming-reference.es.md).
-
-### 2.2 TuiPalette
+### 2.2 TuiEgaPalette
 
 ```csharp
 /// <summary>
-/// Mapa de roles semánticos a colores concretos.
-/// Inmutable tras la construcción.
+/// Paleta EGA estándar de 16 colores como constantes SKColor,
+/// ordenadas por índice EGA canónico (0–15).
 /// </summary>
-public sealed class TuiPalette
-{
-    private readonly IReadOnlyDictionary<TuiColorRole, SKColor> _colors;
-
-    public TuiPalette(IReadOnlyDictionary<TuiColorRole, SKColor> colors);
-
-    /// <summary>Devuelve el color para el rol dado.</summary>
-    public SKColor this[TuiColorRole role] => _colors[role];
-
-    /// <summary>Intenta obtener el color, devuelve fallback si el rol no está definido.</summary>
-    public SKColor GetOrDefault(TuiColorRole role, SKColor fallback = default);
-
-    /// <summary>Crea una copia con algunos roles sobreescritos.</summary>
-    public TuiPalette With(IReadOnlyDictionary<TuiColorRole, SKColor> overrides);
-}
+public static class TuiEgaPalette { ... }
 ```
 
-### 2.3 TuiTheme
+### 2.3 TuiPalette
 
 ```csharp
 /// <summary>
-/// Tema completo: paleta de colores, fuente y configuración visual global.
-/// La instancia activa se accede a través de TuiApplication.CurrentTheme.
+/// Resuelve valores TuiColorRole a instancias SKColor concretas
+/// usando el esquema de color fijo basado en EGA.
 /// </summary>
-public sealed class TuiTheme
-{
-    /// <summary>Nombre identificativo del tema.</summary>
-    public required string Name { get; init; }
-
-    /// <summary>Paleta de colores del tema.</summary>
-    public required TuiPalette Palette { get; init; }
-
-    /// <summary>Nombre del recurso embebido de la fuente (monoespaciada).</summary>
-    public required string FontResourceName { get; init; }
-
-    /// <summary>Tamaño de fuente en píxeles lógicos.</summary>
-    public required float FontSize { get; init; }
-
-    /// <summary>Grosor de línea para bordes simples.</summary>
-    public float BorderWidth { get; init; } = 1f;
-
-    /// <summary>Grosor de línea para bordes dobles.</summary>
-    public float BorderDoubleWidth { get; init; } = 1f;
-
-    /// <summary>Gap entre las dos líneas del borde doble, en píxeles.</summary>
-    public float BorderDoubleGap { get; init; } = 2f;
-
-    /// <summary>Opacidad de las sombras (0.0 – 1.0).</summary>
-    public float ShadowOpacity { get; init; } = 0.55f;
-}
-```
-
-### 2.4 Tema PcTools9 (proyecto separado)
-
-El proyecto `Retro.TUI.Theme.PcTools9` expone una clase estática con la instancia
-del tema. Depende únicamente de `Retro.TUI.Theming`.
-
-```csharp
-namespace Retro.TUI.Theme.PcTools9;
-
-public static class PcTools9Theme
+public static class TuiPalette
 {
     /// <summary>
-    /// Instancia del tema PC Tools 9.x de Central Point Software.
-    /// Paleta EGA 16 colores, fuente IBM VGA CP437 9×16 px
-    /// que además incluye versiones Unicode extendidas.
+    /// Devuelve el SKColor mapeado al rol dado.
+    /// Lanza KeyNotFoundException si el rol no tiene entrada.
     /// </summary>
-    public static TuiTheme Instance { get; } = Build();
+    public static SKColor Resolve(TuiColorRole role);
+}
+```
 
-    private static TuiTheme Build() { /* ... */ }
+### 2.4 TuiTheme
+
+```csharp
+/// <summary>
+/// Proporciona parámetros fijos de tipografía y sombra.
+/// La tipografía IBM VGA 9x16 se carga desde un recurso embebido
+/// en este ensamblado a través del constructor estático.
+/// </summary>
+public static class TuiTheme
+{
+    public static string FontFamily { get; }
+    public static SKTypeface Typeface { get; }
+    public static float FontSize { get; }
+    public static float ShadowOpacity { get; }
+    public static int ShadowOffsetX { get; }
+    public static int ShadowOffsetY { get; }
 }
 ```
 
@@ -1028,7 +918,7 @@ Relación de controles planificados con sus responsabilidades:
 Todos los widgets siguen el mismo contrato:
 
 - Heredan de `TuiView` (los simples) o `TuiGroup` (los compuestos).
-- No tienen colores hardcodeados: acceden al tema vía `TuiRenderContext.Theme`.
+- Sin colores *hardcodeados*: se resuelven mediante `TuiPalette.Resolve(TuiColorRole)`.
 - Implementan `HandleEvent` para responder a teclado y ratón.
 - Llaman a `Invalidate()` cuando su estado cambia y necesitan redibujado.
 - Exponen eventos .NET estándar para notificar al código de la aplicación:
@@ -1043,21 +933,22 @@ Todos los widgets siguen el mismo contrato:
 ```
 TuiApplication.Run(host, options)
     │
-    ├── host.Initialize(options)          // Crea ventana SDL2
-    ├── TuiFont.Load(...)                 // Carga fuente IBM VGA
-    ├── TuiGrid.Initialize(...)           // Calcula métricas de grid
-    ├── TuiRenderContext.Create(...)      // Prepara contexto Skia
+    ├── host.Initialize(options)                            // Crea ventana SDL2
+    ├── TuiFont.Load(TuiTheme.Typeface, TuiTheme.FontSize)  // Fuente IBM VGA desde TuiTheme
+    ├── TuiFont.Load(...)                                   // Carga fuente IBM VGA
+    ├── TuiGrid.Initialize(...)                             // Calcula métricas de grid
+    ├── TuiRenderContext.Create(...)                        // Prepara contexto Skia
     ├── Desktop = new TuiDesktop()
-    ├── Desktop.RebuildBackground(ctx)    // Pre-renderiza fondo
-    ├── OnInitialize()                    // La app construye su árbol de vistas
+    ├── Desktop.RebuildBackground(ctx)                      // Pre-renderiza fondo
+    ├── OnInitialize()                                      // La app construye su árbol de vistas
     │
-    └── TuiMessageLoop.Run(...)           // Bucle principal
+    └── TuiMessageLoop.Run(...)                             // Bucle principal
             │
-            ├── host.PollEvents(queue)    // SDL → TuiEvent → queue
-            ├── DispatchEvents(queue)     // queue → árbol de vistas
-            ├── UpdateTimers()            // TuiTimerEvent si procede
-            ├── Desktop.Draw(ctx)         // Dibuja árbol completo
-            └── host.Present()            // Muestra el frame
+            ├── host.PollEvents(queue)                      // SDL → TuiEvent → queue
+            ├── DispatchEvents(queue)                       // queue → árbol de vistas
+            ├── UpdateTimers()                              // TuiTimerEvent si procede
+            ├── Desktop.Draw(ctx)                           // Dibuja árbol completo
+            └── host.Present()                              // Muestra el frame
 ```
 
 ### 9.2 Flujo de un evento de ratón

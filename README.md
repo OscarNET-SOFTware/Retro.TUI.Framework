@@ -46,8 +46,8 @@ applications with the following core characteristics:
   and an authentic EGA/CGA color palette.
 - **Component model**: hierarchical view tree, typed event system, focus management
   and modal stack, inspired by the Turbo Vision architecture.
-- **Theming**: interchangeable theme system designed from the ground up. The default
-  theme faithfully reproduces the aesthetics of PC Tools 9.x by Central Point Software.
+- **Fixed EGA palette**: 16-color EGA palette with semantic color roles (`TuiColorRole`).
+  Colors are fixed and faithful to the PC Tools 9.x aesthetic by Central Point Software.
 - **Idiomatic C#**: naming, patterns and conventions native to modern C# (.NET 10+).
   It is not a 1:1 translation of Turbo Vision.
 
@@ -59,7 +59,7 @@ applications with the following core characteristics:
 
 - A framework for building desktop TUI applications with a retro look.
 - A reusable library distributable as independent NuGet packages per layer.
-- An extensible foundation for building custom themes, controls and behaviours.
+- An extensible foundation for building custom controls and behaviours.
 
 ### It is not
 
@@ -95,9 +95,10 @@ to the modern C# paradigm.
 
 The visual aesthetic reference. Characteristics reproduced:
 
-- EGA 16-color palette with the exact PC Tools 9 colors.
-- IBM VGA monospaced font (PxPlus IBM VGA 9x16), embedded as a resource.
-- Desktop background with dot pattern.
+- Standard 16-color EGA palette mapped to semantic roles, with two additional
+  non-EGA grays for inactive title bars and scroll bar tracks.
+- IBM VGA monospaced font (PxPlus IBM VGA 9x16), embedded as a resource in
+  `Retro.TUI.Theming`.
 - Application title bar in Norton/PCTools style.
 - Window borders with geometric lines (not Unicode box-drawing characters).
 - Semi-transparent shadows on windows and dialogs.
@@ -133,13 +134,16 @@ Examples: `TuiView`, `TuiDialog`, `TuiMenuBar`, `TuiPalette`, `TuiTheme`.
 **Decision**: hierarchy of `abstract record TuiEvent` with subtypes for each event type.
 Queue implemented with `System.Threading.Channels.Channel<TuiEvent>`.
 
-### 4.4 Theming: semantic roles + interchangeable palettes
+### 4.4 Color system: fixed EGA palette + semantic roles
 
-**Decision**: separation into three concepts — `TuiColorRole` (semantic enum),
-`TuiPalette` (role-to-color map) and `TuiTheme` (palette + font + metrics).
+**Decision**: the color scheme is fixed and defined in three static classes —
+`TuiEgaPalette` (16 canonical EGA color constants), `TuiColorMap` (internal
+mapping from `TuiColorRole` to `SKColor`) and `TuiPalette` (public static
+`Resolve(TuiColorRole)` method). `TuiTheme` is a static class holding only
+typography and shadow parameters.
 
-No control has hardcoded colors. Changing the complete application look
-is a matter of changing the active `TuiTheme` instance.
+No control has hardcoded colors. All rendering code resolves colors through
+`TuiPalette.Resolve(TuiColorRole)`.
 
 ### 4.5 Separate projects per layer
 
@@ -162,31 +166,30 @@ XML doc comments on all public API, nullable reference types enabled,
 ```
 Retro.TUI.Framework.sln
 │
-├── src/
-│   ├── Retro.TUI.Hosting/         Window and input host (SDL2)
-│   ├── Retro.TUI.Events/          Event hierarchy and commands
-│   ├── Retro.TUI.Theming/         Palettes, themes and color roles
-│   ├── Retro.TUI.Rendering/       Rendering engine (SkiaSharp)
-│   ├── Retro.TUI.Core/            Application, message loop
-│   ├── Retro.TUI.Views/           TuiView, TuiGroup, TuiDesktop
-│   ├── Retro.TUI.Windows/         TuiWindow, TuiDialog
-│   └── Retro.TUI.Widgets/         Standard controls
-│
-├── themes/
-│   └── Retro.TUI.Theme.PcTools9/  PC Tools 9 theme as a separate package
+├── docs/
+│   └── architecture.md            Detailed technical design
 │
 ├── samples/
-│   └── Retro.TUI.Sample.PcTools/  Demo application
+│   └── Retro.TUI.Sample.Basic/    Basic demo application
 │
-├── tests/
-│   ├── Retro.TUI.Events.Tests/
-│   ├── Retro.TUI.Theming.Tests/
-│   ├── Retro.TUI.Rendering.Tests/
-│   ├── Retro.TUI.Views.Tests/
-│   └── Retro.TUI.Widgets.Tests/
+├── src/
+│   ├── Retro.TUI.Core/            Application, message loop
+│   ├── Retro.TUI.Events/          Event hierarchy and commands
+│   ├── Retro.TUI.Hosting/         Window and input host (SDL2)
+│   ├── Retro.TUI.Rendering/       Rendering engine (SkiaSharp)
+│   ├── Retro.TUI.Theming/         Palettes, themes and color roles
+│   ├── Retro.TUI.Views/           TuiView, TuiGroup, TuiDesktop
+│   ├── Retro.TUI.Widgets/         Standard controls
+│   └── Retro.TUI.Windows/         TuiWindow, TuiDialog
 │
-└── docs/
-    └── architecture.md            Detailed technical design
+└── tests/
+    ├── Retro.TUI.Core.Tests/
+    ├── Retro.TUI.Events.Tests/
+    ├── Retro.TUI.Hosting.Tests/
+    ├── Retro.TUI.Rendering.Tests/
+    ├── Retro.TUI.Theming.Tests/
+    ├── Retro.TUI.Views.Tests/
+    └── Retro.TUI.Windows.Tests/
 ```
 
 ### Project dependencies
@@ -205,8 +208,6 @@ Retro.TUI.Widgets
                             └── Retro.TUI.Hosting
                                     └── Retro.TUI.Events
 ```
-
-`Retro.TUI.Theme.PcTools9` depends only on `Retro.TUI.Theming`.
 
 ---
 
@@ -261,8 +262,8 @@ For the complete technical detail of each layer, see:
 `v0.1.0`
 
 - [x] ✅ `Retro.TUI.Events`: record hierarchy, `TuiCommand`, `TuiKey`
-- [x] ✅ `Retro.TUI.Theming`: `TuiColorRole`, `TuiPalette`, `TuiTheme`
-- [x] ✅ `Retro.TUI.Theme.PcTools9`: palette and IBM VGA font
+- [x] ✅ `Retro.TUI.Theming`: `TuiColorRole`, `TuiEgaPalette`, `TuiColorMap`,
+  `TuiPalette` (static), `TuiTheme` (static) — IBM VGA font embedded as resource
 - [x] ✅ `Retro.TUI.Hosting`: `ITuiHost`, `SdlHost`
 - [x] ✅ `Retro.TUI.Rendering`: `TuiRenderContext`, `TuiGrid`, `TuiFont`
 
@@ -271,7 +272,6 @@ For the complete technical detail of each layer, see:
 
 - [x] ✅ `Retro.TUI.Views`: `TuiView`, `TuiGroup`, `TuiDesktop`
 - [x] ✅ `Retro.TUI.Core`: `TuiApplication`, `TuiMessageLoop`, `TuiFocusManager`
-- [x] ✅ Desktop background with dot pattern
 - [x] ✅ Keyboard and mouse event dispatch to the tree
 - [x] ✅ Custom mouse cursor
 
