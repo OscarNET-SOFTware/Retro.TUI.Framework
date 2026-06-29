@@ -166,7 +166,6 @@ public static class PcTools9Theme
         {
             // ── Desktop ───────────────────────────────────────────────────
             [TuiColorRole.DesktopBackground] = PcToolsGray,
-            [TuiColorRole.DesktopPatternDot] = PcToolsGray,
 
             // ── Application title bar ─────────────────────────────────────
             [TuiColorRole.AppTitleBackground] = EgaBrightBlue,
@@ -274,7 +273,6 @@ public static class PcTools9Theme
         {
             Name = "PC Tools 9.x",
             Palette = palette,
-            DesktopPattern = TuiDesktopPattern.None,
             FontFamily = FontFamilyName,
             FontSize = 16f,
             Typeface = Typeface,

@@ -209,7 +209,6 @@ public enum TuiColorRole
 {
     // Desktop
     DesktopBackground,
-    DesktopPatternDot,
 
     // Application title bar
     AppTitleBackground,
@@ -309,21 +308,7 @@ public sealed class TuiPalette
 }
 ```
 
-### 2.3 TuiDesktopPattern
-
-```csharp
-/// <summary>Desktop background pattern style.</summary>
-public enum TuiDesktopPattern
-{
-    None,             // Solid background
-    DotGrid,          // Dot grid pattern (Norton/PCTools style)
-    Checkerboard,     // Checkerboard pattern
-    HorizontalLines,
-    VerticalLines
-}
-```
-
-### 2.4 TuiTheme
+### 2.3 TuiTheme
 
 ```csharp
 /// <summary>
@@ -344,9 +329,6 @@ public sealed class TuiTheme
     /// <summary>Font size in logical pixels.</summary>
     public required float FontSize { get; init; }
 
-    /// <summary>Desktop background pattern style.</summary>
-    public TuiDesktopPattern DesktopPattern { get; init; } = TuiDesktopPattern.DotGrid;
-
     /// <summary>Line width for single borders.</summary>
     public float BorderWidth { get; init; } = 1f;
 
@@ -361,7 +343,7 @@ public sealed class TuiTheme
 }
 ```
 
-### 2.5 PcTools9 theme (separate project)
+### 2.4 PcTools9 theme (separate project)
 
 The `Retro.TUI.Theme.PcTools9` project exposes a static class with the theme instance.
 It depends only on `Retro.TUI.Theming`.
@@ -597,10 +579,6 @@ public sealed class TuiRenderContext
     // ── Shadow ───────────────────────────────────────────────────
 
     public void DrawShadow(int col, int row, int width, int height);
-
-    // ── Desktop pattern ──────────────────────────────────────────
-
-    public void DrawDesktopPattern(TuiDesktopPattern pattern);
 
     // ── Clipping ─────────────────────────────────────────────────
 

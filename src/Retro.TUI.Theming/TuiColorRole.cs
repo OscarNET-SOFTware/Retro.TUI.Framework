@@ -33,12 +33,6 @@ public enum TuiColorRole
     /// <summary>Background fill color of the desktop area.</summary>
     DesktopBackground,
 
-    /// <summary>
-    /// Color of the dot or pixel used to render the desktop pattern.
-    /// Only relevant when <see cref="TuiTheme.DesktopPattern"/> is not <see cref="TuiDesktopPattern.None"/>.
-    /// </summary>
-    DesktopPatternDot,
-
     // ── Application title bar ─────────────────────────────────────────────
 
     /// <summary>Background of the application-level title bar.</summary>

@@ -50,14 +50,6 @@ public sealed class TuiTheme
     /// </summary>
     public required TuiPalette Palette { get; init; }
 
-    // ── Desktop ───────────────────────────────────────────────────────────
-
-    /// <summary>
-    /// The repeating pattern rendered over the desktop background fill.
-    /// </summary>
-    /// <value>Defaults to <see cref="TuiDesktopPattern.None"/> (solid fill).</value>
-    public TuiDesktopPattern DesktopPattern { get; init; } = TuiDesktopPattern.None;
-
     // ── Typography ────────────────────────────────────────────────────────
 
     /// <summary>

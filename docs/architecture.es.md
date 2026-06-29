@@ -209,7 +209,6 @@ public enum TuiColorRole
 {
     // Escritorio
     DesktopBackground,
-    DesktopPatternDot,
 
     // Barra de título de aplicación
     AppTitleBackground,
@@ -308,21 +307,7 @@ public sealed class TuiPalette
 }
 ```
 
-### 2.3 TuiDesktopPattern
-
-```csharp
-/// <summary>Estilo del patrón de fondo del escritorio.</summary>
-public enum TuiDesktopPattern
-{
-    None,          // Fondo sólido
-    DotGrid,       // Cuadrícula de puntos (estilo Norton/PCTools)
-    Checkerboard,  // Tablero de ajedrez
-    HorizontalLines,
-    VerticalLines
-}
-```
-
-### 2.4 TuiTheme
+### 2.3 TuiTheme
 
 ```csharp
 /// <summary>
@@ -343,9 +328,6 @@ public sealed class TuiTheme
     /// <summary>Tamaño de fuente en píxeles lógicos.</summary>
     public required float FontSize { get; init; }
 
-    /// <summary>Estilo del patrón de fondo del escritorio.</summary>
-    public TuiDesktopPattern DesktopPattern { get; init; } = TuiDesktopPattern.DotGrid;
-
     /// <summary>Grosor de línea para bordes simples.</summary>
     public float BorderWidth { get; init; } = 1f;
 
@@ -360,7 +342,7 @@ public sealed class TuiTheme
 }
 ```
 
-### 2.5 Tema PcTools9 (proyecto separado)
+### 2.4 Tema PcTools9 (proyecto separado)
 
 El proyecto `Retro.TUI.Theme.PcTools9` expone una clase estática con la instancia
 del tema. Depende únicamente de `Retro.TUI.Theming`.
@@ -598,10 +580,6 @@ public sealed class TuiRenderContext
     // ── Sombra ───────────────────────────────────────────────────
 
     public void DrawShadow(int col, int row, int width, int height);
-
-    // ── Patrón de escritorio ─────────────────────────────────────
-
-    public void DrawDesktopPattern(TuiDesktopPattern pattern);
 
     // ── Clipping ─────────────────────────────────────────────────
 

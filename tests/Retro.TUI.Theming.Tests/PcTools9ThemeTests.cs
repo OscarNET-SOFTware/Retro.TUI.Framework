@@ -59,14 +59,18 @@ public sealed class PcTools9ThemeTests
         Assert.True(color.Alpha >= 0);
     }
 
-    public static IEnumerable<object[]> AllColorRoles() =>
-        Enum.GetValues<TuiColorRole>().Select(r => new object[] { r });
+    public static TheoryData<TuiColorRole> AllColorRoles()
+    {
+        var data = new TheoryData<TuiColorRole>();
+        foreach (TuiColorRole role in Enum.GetValues<TuiColorRole>())
+            data.Add(role);
+        return data;
+    }
 
     // ── Key color values (Paint.NET confirmed) ────────────────────────────
 
     [Theory]
     [InlineData(TuiColorRole.DesktopBackground, 0x69, 0x69, 0x69)] // PcToolsGray
-    [InlineData(TuiColorRole.DesktopPatternDot, 0x69, 0x69, 0x69)] // same as desktop
     [InlineData(TuiColorRole.AppTitleBackground, 0x55, 0x55, 0xFF)] // EgaBrightBlue
     [InlineData(TuiColorRole.AppTitleForeground, 0xFF, 0xFF, 0xFF)] // White
     [InlineData(TuiColorRole.AppTitleClockForeground, 0xFF, 0xFF, 0x55)] // EgaBrightYellow
@@ -137,12 +141,6 @@ public sealed class PcTools9ThemeTests
     }
 
     // ── Theme settings ────────────────────────────────────────────────────
-
-    [Fact]
-    public void Instance_DesktopPattern_IsNone()
-    {
-        Assert.Equal(TuiDesktopPattern.None, PcTools9Theme.Instance.DesktopPattern);
-    }
 
     [Fact]
     public void Instance_FontFamily_IsIbmVga9x16()

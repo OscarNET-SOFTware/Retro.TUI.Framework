@@ -453,49 +453,6 @@ public sealed class TuiRenderContext : IDisposable
         _canvas.DrawRect(px + ox, py + ph, pw - ox, oy, _fillPaint);
     }
 
-    // ── Desktop pattern ───────────────────────────────────────────────────────
-
-    /// <summary>
-    /// Draws the full-screen desktop background pattern as defined by
-    /// <paramref name="pattern"/>.
-    /// </summary>
-    /// <param name="pattern">
-    /// The pattern style. <see cref="TuiDesktopPattern.None"/> fills with
-    /// a solid <see cref="TuiColorRole.DesktopBackground"/> color only.
-    /// </param>
-    public void DrawDesktopPattern(TuiDesktopPattern pattern)
-    {
-        RequireCanvas();
-
-        // Always fill the solid background first.
-        _fillPaint.Color = ResolveColor(TuiColorRole.DesktopBackground);
-        _canvas!.DrawRect(0, 0, Grid.ScreenWidth, Grid.ScreenHeight, _fillPaint);
-
-        if (pattern == TuiDesktopPattern.None)
-            return;
-
-        SKColor dotColor = ResolveColor(TuiColorRole.DesktopPatternDot);
-
-        switch (pattern)
-        {
-            case TuiDesktopPattern.DotGrid:
-                DrawPatternDotGrid(dotColor);
-                break;
-
-            case TuiDesktopPattern.Checkerboard:
-                DrawPatternCheckerboard(dotColor);
-                break;
-
-            case TuiDesktopPattern.HorizontalLines:
-                DrawPatternHorizontalLines(dotColor);
-                break;
-
-            case TuiDesktopPattern.VerticalLines:
-                DrawPatternVerticalLines(dotColor);
-                break;
-        }
-    }
-
     // ── Clipping ──────────────────────────────────────────────────────────────
 
     /// <summary>
@@ -672,54 +629,6 @@ public sealed class TuiRenderContext : IDisposable
             height * Grid.CellHeight,
             _fillPaint);
 
-    // ── Desktop pattern helpers ───────────────────────────────────────────────
-
-    private void DrawPatternDotGrid(SKColor color)
-    {
-        // Place one dot per cell at the center of each grid cell.
-        // Matches the classic Norton Commander / PC Tools dot-grid desktop.
-        _fillPaint.Color = color;
-        float dotSize = Math.Max(1f, Grid.CellWidth * 0.15f);
-        float dotOffX = (Grid.CellWidth - dotSize) * 0.5f;
-        float dotOffY = (Grid.CellHeight - dotSize) * 0.5f;
-
-        for (int r = 0; r < Grid.Rows; r++)
-            for (int c = 0; c < Grid.Columns; c++)
-                _canvas!.DrawRect(
-                    Grid.PixelX(c) + dotOffX,
-                    Grid.PixelY(r) + dotOffY,
-                    dotSize, dotSize,
-                    _fillPaint);
-    }
-
-    private void DrawPatternCheckerboard(SKColor color)
-    {
-        _fillPaint.Color = color;
-        for (int r = 0; r < Grid.Rows; r++)
-            for (int c = 0; c < Grid.Columns; c++)
-                if ((r + c) % 2 == 0)
-                    DrawPixelRect(c, r, 1, 1);
-    }
-
-    private void DrawPatternHorizontalLines(SKColor color)
-    {
-        _fillPaint.Color = color;
-        for (int r = 0; r < Grid.Rows; r += 2)
-        {
-            _canvas!.DrawRect(0f, Grid.PixelY(r) + Grid.CellHeight - 1f,
-                              Grid.ScreenWidth, 1f, _fillPaint);
-        }
-    }
-
-    private void DrawPatternVerticalLines(SKColor color)
-    {
-        _fillPaint.Color = color;
-        for (int c = 0; c < Grid.Columns; c += 2)
-        {
-            _canvas!.DrawRect(Grid.PixelX(c) + Grid.CellWidth - 1f, 0f,
-                              1f, Grid.ScreenHeight, _fillPaint);
-        }
-    }
     // ── IDisposable ───────────────────────────────────────────────────────────
 
     /// <summary>

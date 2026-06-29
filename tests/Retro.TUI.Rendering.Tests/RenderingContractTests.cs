@@ -370,26 +370,6 @@ public sealed class TuiRenderContextTests
         => AssertDrawDoesNotThrow(ctx => ctx.DrawShadow(1, 1, 10, 5));
 
     [Fact]
-    public void DrawDesktopPattern_None_DoesNotThrow()
-        => AssertDrawDoesNotThrow(ctx => ctx.DrawDesktopPattern(TuiDesktopPattern.None));
-
-    [Fact]
-    public void DrawDesktopPattern_DotGrid_DoesNotThrow()
-        => AssertDrawDoesNotThrow(ctx => ctx.DrawDesktopPattern(TuiDesktopPattern.DotGrid));
-
-    [Fact]
-    public void DrawDesktopPattern_Checkerboard_DoesNotThrow()
-        => AssertDrawDoesNotThrow(ctx => ctx.DrawDesktopPattern(TuiDesktopPattern.Checkerboard));
-
-    [Fact]
-    public void DrawDesktopPattern_HorizontalLines_DoesNotThrow()
-        => AssertDrawDoesNotThrow(ctx => ctx.DrawDesktopPattern(TuiDesktopPattern.HorizontalLines));
-
-    [Fact]
-    public void DrawDesktopPattern_VerticalLines_DoesNotThrow()
-        => AssertDrawDoesNotThrow(ctx => ctx.DrawDesktopPattern(TuiDesktopPattern.VerticalLines));
-
-    [Fact]
     public void PushClip_And_PopClip_DoNotThrow()
         => AssertDrawDoesNotThrow(ctx =>
         {

@@ -50,7 +50,6 @@ Status legend:
 | TuiColorRole | Turbo Vision ref. | PC Tools color | Notes | Status |
 |---|---|---|---|---|
 | `DesktopBackground` | `apColor[0]` bg | `#696969` | Desktop area fill color | `implemented` |
-| `DesktopPatternDot` | — | `#696969` | For `DotGrid` mode. Same as `DesktopBackground` in the PC Tools theme | `implemented` |
 
 ---
 
@@ -244,7 +243,6 @@ Origin legend:
 | TuiColorRole | Hex | R | G | B | Origin |
 |---|---|---|---|---|---|
 | `DesktopBackground` | `#696969` | 105 | 105 | 105 | `measured` |
-| `DesktopPatternDot` | `#696969` | 105 | 105 | 105 | `derived` — same as `DesktopBackground` in the PC Tools theme |
 | `AppTitleBackground` | `#5555FF` | 85 | 85 | 255 | `measured` |
 | `AppTitleForeground` | `#FFFFFF` | 255 | 255 | 255 | `measured` |
 | `AppTitleClockForeground` | `#FFFF55` | 255 | 255 | 85 | `measured` |

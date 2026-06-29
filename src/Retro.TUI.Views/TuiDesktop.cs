@@ -15,11 +15,12 @@
 
 using Retro.TUI.Events;
 using Retro.TUI.Rendering;
+using Retro.TUI.Theming;
 
 namespace Retro.TUI.Views;
 
 /// <summary>
-/// The root view that fills the entire screen with a themed background pattern
+/// The root view that fills the entire screen with a themed background color
 /// and acts as the top-level container for all windows, dialogs and overlays.
 /// </summary>
 /// <remarks>
@@ -29,8 +30,8 @@ namespace Retro.TUI.Views;
 /// host and grid are initialized.
 /// <para/>
 /// The desktop has no visual state of its own beyond what is encoded in the active
-/// theme. It calls <see cref="TuiRenderContext.DrawDesktopPattern"/> to paint the
-/// background, then delegates to <see cref="TuiGroup.Draw"/> to render all children.
+/// theme. It fills the background with <see cref="TuiColorRole.DesktopBackground"/>
+/// before delegating to <see cref="TuiGroup.Draw"/> to render all children.
 /// <para/>
 /// <b>Modal stack:</b> when one or more modal views are active (pushed via
 /// <see cref="PushModal"/>), <see cref="HasModal"/> returns <see langword="true"/>
@@ -128,8 +129,8 @@ public sealed class TuiDesktop : TuiGroup
     {
         ArgumentNullException.ThrowIfNull(ctx);
 
-        // Paint the full-screen background (solid color + optional dot pattern).
-        ctx.DrawDesktopPattern(ctx.Theme.DesktopPattern);
+        // Paint the full-screen background with a solid color fill.
+        ctx.FillRect(0, 0, Width, Height, TuiColorRole.DesktopBackground);
 
         // Draw all children on top of the background.
         base.Draw(ctx);

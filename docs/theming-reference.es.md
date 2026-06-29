@@ -50,7 +50,6 @@ Leyenda de estado:
 | TuiColorRole | Ref. Turbo Vision | Color PC Tools | Notas | Estado |
 |---|---|---|---|---|
 | `DesktopBackground` | `apColor[0]` bg | `#696969` | Color de relleno del escritorio sin patrón | `implementado` |
-| `DesktopPatternDot` | — | `#696969` | Para el modo `DotGrid`. Igual a `DesktopBackground` en el tema PC Tools | `implementado` |
 
 ---
 
@@ -244,7 +243,6 @@ Leyenda de origen:
 | TuiColorRole | Hex | R | G | B | Origen |
 |---|---|---|---|---|---|
 | `DesktopBackground` | `#696969` | 105 | 105 | 105 | `medido` |
-| `DesktopPatternDot` | `#696969` | 105 | 105 | 105 | `derivado` — igual que `DesktopBackground` en el tema PC Tools |
 | `AppTitleBackground` | `#5555FF` | 85 | 85 | 255 | `medido` |
 | `AppTitleForeground` | `#FFFFFF` | 255 | 255 | 255 | `medido` |
 | `AppTitleClockForeground` | `#FFFF55` | 255 | 255 | 85 | `medido` |
