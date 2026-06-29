@@ -7,6 +7,58 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `TuiEgaPalette`: static class exposing the 16 standard EGA colors as `SKColor`
+  constants (`EgaBlack` through `EgaWhite`), ordered by canonical EGA index 0–15.
+- `TuiColorMap`: internal static class mapping every `TuiColorRole` to its
+  canonical EGA color. Single source of truth for all color values in the framework.
+  Two non-EGA grays (`#696969` mid-gray and `#CACACA` light-gray) are used
+  internally for roles that require intermediate values.
+- 339 tests passing across all projects (0 failed).
+
+### Changed
+
+- `TuiPalette`: replaced the instantiable immutable map (`new TuiPalette(...)`,
+  indexer `[]`, `GetOrDefault`, `With`) with a static class exposing a single
+  `Resolve(TuiColorRole)` method that delegates to `TuiColorMap`. The color scheme
+  is now fixed and cannot be customized at runtime.
+- `TuiTheme`: replaced the instantiable aggregate (`Name`, `Palette`,
+  `DesktopPattern`, etc.) with a static class holding only fixed typography and
+  shadow parameters (`FontFamily`, `Typeface`, `FontSize`, `ShadowOpacity`,
+  `ShadowOffsetX`, `ShadowOffsetY`). The IBM VGA 9x16 typeface is loaded from an
+  embedded resource in `Retro.TUI.Theming` via the static constructor.
+- `TuiRenderContext`: constructor no longer accepts a `TuiTheme` parameter —
+  color scheme and shadow parameters are resolved statically via `TuiPalette` and
+  `TuiTheme`. `ResolveColor` now delegates to `TuiPalette.Resolve`.
+- `TuiApplication.Run`: `TuiTheme theme` parameter removed — font and shadow
+  settings are read directly from `TuiTheme` static properties.
+- `TuiDesktop.Draw`: replaced `ctx.DrawDesktopPattern(...)` with
+  `ctx.FillRect(0, 0, Width, Height, TuiColorRole.DesktopBackground)` — the
+  desktop always renders a solid background fill.
+- Mouse cursor bitmap replaced with an accurate 12×20 pixel-art Windows 3.11-style
+  arrow pointer (previously used a Windows 95/NT-style shape).
+- `[-]` system-menu glyph corrected to 18×16 px per PC Tools 9.x reference
+  (previously 16×16 px). Hit-test updated to cover `AbsCol` and `AbsCol + 1`;
+  drag detection excludes those two cells. Dash width corrected to `CellHeight - 5 px`.
+
+### Removed
+
+- `TuiDesktopPattern` enum and all pattern-rendering methods (`DrawDesktopPattern`,
+  `DrawPatternDotGrid`, `DrawPatternCheckerboard`, `DrawPatternHorizontalLines`,
+  `DrawPatternVerticalLines`) — the desktop always renders a solid background.
+- `TuiColorRole.DesktopPatternDot` — no longer needed with patterns removed.
+- `Retro.TUI.Theme.PcTools9` project (`PcTools9Theme`, embedded font, theme
+  singleton) — the IBM VGA 9x16 font is now embedded in `Retro.TUI.Theming` and
+  the color scheme is defined in `TuiColorMap`.
+- `docs/theming-reference.md` and `docs/theming-reference.es.md` — superseded by
+  the fixed EGA color scheme; color role inventory is now in `TuiColorRole.cs`
+  XML documentation.
+- `tests/Retro.TUI.Theming.Tests/PcTools9ThemeTests.cs` — covered by the new
+  `TuiPaletteTests` verifying `TuiPalette.Resolve` and `TuiEgaPalette` constants.
+- `tests/Retro.TUI.Rendering.Tests/PcTools9FontIntegrationTests.cs` — font loading
+  is now covered by `TuiTheme` static constructor.
+
 ## [0.3.0-alpha.3] - 2026-06-27
 
 ### Added

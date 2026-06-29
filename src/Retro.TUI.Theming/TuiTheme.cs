@@ -13,108 +13,88 @@
 // </copyright>
 // ---------------------------------------------------------------------------------------------------------------------
 
+using System.Reflection;
+
+using SkiaSharp;
+
 namespace Retro.TUI.Theming;
 
 /// <summary>
-/// The complete, immutable definition of a visual theme.
+/// Provides the fixed typography and shadow parameters used by the framework renderer.
 /// </summary>
 /// <remarks>
-/// A <see cref="TuiTheme"/> aggregates all visual parameters used by the framework renderer:
-/// the color palette, the desktop pattern, typography settings and shadow parameters.
+/// The color scheme is fixed and defined in <see cref="TuiPalette"/> and
+/// <see cref="TuiEgaPalette"/>. <see cref="TuiTheme"/> only holds parameters
+/// that may vary by environment: font family, font size, typeface and shadow settings.
 /// <para/>
-/// Instances are immutable after construction via the <c>init</c>-only properties.
-/// The recommended construction pattern is object-initializer syntax:
-/// <code>
-/// var theme = new TuiTheme
-/// {
-///     Name    = "My Theme",
-///     Palette = myPalette,
-/// };
-/// </code>
-/// Theme packages (e.g. <c>Retro.TUI.Theme.PcTools9</c>) expose a pre-built singleton
-/// via a static <c>Instance</c> property.
+/// All properties have sensible defaults matching the IBM VGA 9×16 reference font.
+/// Override individual properties via the static setters when the host environment
+/// requires different values (e.g. a different screen resolution or font size).
 /// </remarks>
-public sealed class TuiTheme
+public static class TuiTheme
 {
-    // ── Identity ──────────────────────────────────────────────────────────
+    // ── Font constants ────────────────────────────────────────────────────────
 
     /// <summary>
-    /// Human-readable display name of the theme.
+    /// Manifest resource name of the embedded font file in this assembly.
+    /// Set via <c>&lt;LogicalName&gt;</c> in the project file.
     /// </summary>
-    public required string Name { get; init; }
+    private const string FontResourceName =
+        "Retro.TUI.Theming.Fonts.PxPlus_IBM_VGA_9x16.ttf";
 
-    // ── Color palette ─────────────────────────────────────────────────────
+    // ── Typography ────────────────────────────────────────────────────────────
 
-    /// <summary>
-    /// The color palette that maps every <see cref="TuiColorRole"/> to a concrete color.
-    /// </summary>
-    public required TuiPalette Palette { get; init; }
-
-    // ── Desktop ───────────────────────────────────────────────────────────
+    /// <summary>Family name of the IBM VGA 9x16 font.</summary>
+    public static string FontFamily { get; } = "PxPlus IBM VGA 9x16";
 
     /// <summary>
-    /// The repeating pattern rendered over the desktop background fill.
-    /// </summary>
-    /// <value>Defaults to <see cref="TuiDesktopPattern.None"/> (solid fill).</value>
-    public TuiDesktopPattern DesktopPattern { get; init; } = TuiDesktopPattern.None;
-
-    // ── Typography ────────────────────────────────────────────────────────
-
-    /// <summary>
-    /// Name of the primary font family used to render all UI text.
+    /// Gets the IBM VGA 9x16 typeface loaded from the embedded resource.
     /// </summary>
     /// <remarks>
-    /// The font must be available as an embedded resource in the theme assembly
-    /// or registered with the SkiaSharp font manager before the theme is applied.
+    /// Initialized by the static constructor. In SkiaSharp 3.x,
+    /// <c>SKFontManager.RegisterTypeface</c> was removed; the typeface is
+    /// loaded once and passed directly to the rendering layer.
     /// </remarks>
-    /// <value>Defaults to <c>"IBM VGA 9x16"</c> (the canonical CP437 VGA bitmap font).</value>
-    public string FontFamily { get; init; } = "IBM VGA 9x16";
-
-    /// <summary>
-    /// Gets the pre-loaded <see cref="SkiaSharp.SKTypeface"/> for this theme, or
-    /// <see langword="null"/> to resolve by <see cref="FontFamily"/> name via
-    /// <c>SKFontManager.Default.MatchFamily</c>.
-    /// </summary>
-    /// <remarks>
-    /// Theme packages that load fonts from embedded resources should set this
-    /// property directly. <c>SKFontManager.RegisterTypeface</c> was removed in
-    /// SkiaSharp 3.x, so family-name lookup via <c>MatchFamily</c> does not work
-    /// for embedded fonts. When this property is non-null, <c>TuiApplication</c>
-    /// uses it directly and skips the <c>MatchFamily</c> fallback.
-    /// </remarks>
-    public SkiaSharp.SKTypeface? Typeface { get; init; }
+    public static SKTypeface Typeface { get; }
 
     /// <summary>
     /// Size of the primary font in logical pixels.
     /// </summary>
-    /// <value>Defaults to <c>16f</c> (matches the 9×16 px VGA glyph height).</value>
-    public float FontSize { get; init; } = 16f;
+    /// <value><c>16f</c> — matches the 9×16 px VGA glyph height.</value>
+    public static float FontSize { get; } = 16f;
 
-    // ── Shadow ────────────────────────────────────────────────────────────
+    // ── Shadow ────────────────────────────────────────────────────────────────
 
     /// <summary>
     /// Opacity of drop shadows cast by windows, dialogs and menu popups.
     /// </summary>
     /// <remarks>
-    /// The shadow color itself is defined by <see cref="TuiColorRole.WindowShadow"/>,
-    /// <see cref="TuiColorRole.MenuPopupShadow"/> etc. in the palette.
-    /// This value controls how transparent the shadow appears over whatever is behind it.
+    /// The shadow color is defined by <see cref="TuiColorRole.WindowShadow"/> and
+    /// related roles in <see cref="TuiPalette"/>. This value controls transparency.
     /// </remarks>
-    /// <value>
-    /// A value in the range [0.0, 1.0].
-    /// Defaults to <c>0.65f</c>.
-    /// </value>
-    public float ShadowOpacity { get; init; } = 0.65f;
+    /// <value><c>0.65f</c> — range [0.0, 1.0].</value>
+    public static float ShadowOpacity { get; } = 0.65f;
+
+    /// <summary>Horizontal offset in pixels of drop shadows.</summary>
+    /// <value><c>8</c> px.</value>
+    public static int ShadowOffsetX { get; } = 8;
+
+    /// <summary>Vertical offset in pixels of drop shadows.</summary>
+    /// <value><c>7</c> px.</value>
+    public static int ShadowOffsetY { get; } = 7;
 
     /// <summary>
-    /// Horizontal offset in pixels of drop shadows.
+    /// Initializes static members — loads the IBM VGA 9x16 typeface from
+    /// the embedded resource exactly once.
     /// </summary>
-    /// <value>Defaults to <c>8</c>. Unit is pixels, not grid cells.</value>
-    public int ShadowOffsetX { get; init; } = 8;
+    static TuiTheme()
+    {
+        Assembly assembly = typeof(TuiTheme).Assembly;
+        using Stream? stream = assembly.GetManifestResourceStream(FontResourceName);
 
-    /// <summary>
-    /// Vertical offset in pixels of drop shadows.
-    /// </summary>
-    /// <value>Defaults to <c>7</c>. Unit is pixels, not grid cells.</value>
-    public int ShadowOffsetY { get; init; } = 7;
+        Typeface = (stream is not null
+            ? SKTypeface.FromStream(stream)
+            : null)
+            ?? SKTypeface.Default;
+    }
 }

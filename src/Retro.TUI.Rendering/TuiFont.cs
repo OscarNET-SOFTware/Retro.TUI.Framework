@@ -24,10 +24,11 @@ namespace Retro.TUI.Rendering;
 /// <remarks>
 /// In SkiaSharp 3.x, <see cref="SKFontManager"/> only manages system fonts;
 /// it does not expose a public API to register custom typefaces.
-/// Theme packages load their font file once and expose the resulting
-/// <see cref="SKTypeface"/> via a static property (e.g.
-/// <c>PcTools9Theme.Typeface</c>). <see cref="TuiFont"/> receives that
-/// typeface directly through <see cref="Load(SKTypeface, float)"/>.
+/// The framework loads the IBM VGA 9x16 font from an embedded resource in
+/// <see cref="Theming.TuiTheme"/> and exposes it via
+/// <see cref="Theming.TuiTheme.Typeface"/>.
+/// <see cref="TuiFont"/> receives that typeface directly through
+/// <see cref="Load(SKTypeface, float)"/>.
 /// <para/>
 /// The framework does not provide a fallback font: passing an invalid
 /// typeface or size fails immediately.
@@ -54,8 +55,8 @@ public sealed class TuiFont : IDisposable
     /// Configures the font from the supplied typeface at the given size.
     /// </summary>
     /// <param name="typeface">
-    /// The typeface to use. Typically the static <c>Typeface</c> property of
-    /// a theme class (e.g. <c>PcTools9Theme.Typeface</c>).
+    /// The typeface to use. Typically <see cref="Retro.TUI.Theming.TuiTheme.Typeface"/>,
+    /// which is loaded from the embedded IBM VGA 9x16 font resource.
     /// </param>
     /// <param name="size">Font size in logical pixels. Must be greater than zero.</param>
     /// <exception cref="ArgumentNullException">

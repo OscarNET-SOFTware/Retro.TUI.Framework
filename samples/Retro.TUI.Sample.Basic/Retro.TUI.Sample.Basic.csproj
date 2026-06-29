@@ -10,7 +10,6 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Retro.TUI.Core\Retro.TUI.Core.csproj" />
     <ProjectReference Include="..\..\src\Retro.TUI.Windows\Retro.TUI.Windows.csproj" />
-    <ProjectReference Include="..\..\themes\Retro.TUI.Theme.PcTools9\Retro.TUI.Theme.PcTools9.csproj" />
   </ItemGroup>
 
 </Project>

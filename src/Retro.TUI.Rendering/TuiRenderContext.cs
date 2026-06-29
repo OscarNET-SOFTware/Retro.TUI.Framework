@@ -45,39 +45,30 @@ public sealed class TuiRenderContext : IDisposable
     private readonly SKPaint _textPaint = new() { IsAntialias = false };
 
     /// <summary>
-    /// Lazily-built bitmap for <see cref="DrawMouseCursor"/>, rendered once using
-    /// the <see cref="TuiColorRole.MouseCursorFill"/> and
-    /// <see cref="TuiColorRole.MouseCursorOutline"/> colors resolved at first draw.
+    /// Lazily-built bitmap for <see cref="DrawMouseCursor"/>, rendered once
+    /// using the <see cref="TuiColorRole.MouseCursorFill"/> and
+    /// <see cref="TuiColorRole.MouseCursorOutline"/> colors.
     /// </summary>
-    /// <remarks>
-    /// TODO: <c>_cursorBitmap</c> is cached with colors resolved at first draw.
-    /// If <c>CurrentTheme</c> changes at runtime, the cursor will retain stale
-    /// colors until this <see cref="TuiRenderContext"/> is recreated. Revisit if
-    /// hot theme-switching becomes a supported scenario.
-    /// </remarks>
     private SKBitmap? _cursorBitmap;
 
     // ── Construction ──────────────────────────────────────────────────────────
 
     /// <summary>
     /// Initializes a new <see cref="TuiRenderContext"/> with the specified
-    /// grid metrics, font and theme.
+    /// grid metrics and font.
     /// </summary>
     /// <param name="grid">The character grid metrics for this session.</param>
     /// <param name="font">The loaded framework font.</param>
-    /// <param name="theme">The active visual theme.</param>
     /// <exception cref="ArgumentNullException">
     /// Thrown when any argument is <see langword="null"/>.
     /// </exception>
-    public TuiRenderContext(TuiGrid grid, TuiFont font, TuiTheme theme)
+    public TuiRenderContext(TuiGrid grid, TuiFont font)
     {
         ArgumentNullException.ThrowIfNull(grid);
         ArgumentNullException.ThrowIfNull(font);
-        ArgumentNullException.ThrowIfNull(theme);
 
         Grid = grid;
         Font = font;
-        Theme = theme;
     }
 
     // ── Public properties ─────────────────────────────────────────────────────
@@ -87,9 +78,6 @@ public sealed class TuiRenderContext : IDisposable
 
     /// <summary>Gets the loaded framework font.</summary>
     public TuiFont Font { get; }
-
-    /// <summary>Gets the active visual theme.</summary>
-    public TuiTheme Theme { get; }
 
     // ── Internal frame lifecycle (NOT part of the public API) ─────────────────
 
@@ -315,16 +303,19 @@ public sealed class TuiRenderContext : IDisposable
     /// Pixel layout (reference: IBM VGA 9×16 cell):
     /// <list type="bullet">
     ///   <item><description>
-    ///     Outer border: 1 px stroke rectangle covering the full cell.
+    ///     Outer border: 1 px on left, top and bottom; 2 px on the right.
+    ///     Total glyph size: <c>CellHeight + 2</c> px wide × <c>CellHeight</c> px tall
+    ///     (18×16 px on a 9×16 IBM VGA cell). The glyph overflows into the adjacent
+    ///     cell by <c>CellHeight + 2 - CellWidth</c> px.
     ///   </description></item>
     ///   <item><description>
-    ///     Inner fill: <paramref name="bg"/>-colored rectangle inset by 1 px on all sides.
+    ///     Inner fill: <paramref name="bg"/>-colored rectangle inset 1 px on the
+    ///     left, top and bottom; 2 px on the right.
     ///   </description></item>
     ///   <item><description>
     ///     Dash: <paramref name="fg"/>-colored filled rectangle,
-    ///     width = <c>CellWidth - 4 px</c> (2 px margin left + right),
-    ///     height ≈ <c>CellHeight × 3/16</c> (3 px at 16 px cell height),
-    ///     positioned 2 px from the left and 5 px from the top of the cell.
+    ///     width = <c>CellHeight - 6 px</c> (10 px at 16 px cell height),
+    ///     height = 3 px, positioned 3 px from the left and 6 px from the top.
     ///   </description></item>
     /// </list>
     /// </remarks>
@@ -334,29 +325,29 @@ public sealed class TuiRenderContext : IDisposable
 
         float x = Grid.PixelX(col);
         float y = Grid.PixelY(row);
-        float w = Grid.CellWidth;
         float h = Grid.CellHeight;
 
         SKColor fgColor = ResolveColor(fg);
         SKColor bgColor = ResolveColor(bg);
 
-        // ── Outer border — fill full cell with fg color ───────────────────────
-        // Using a filled rect instead of a stroked rect: SKPaint strokes are
-        // centered on the path, which expands the drawn area by StrokeWidth/2
-        // on each side and produces a 10×17 px result on a 9×16 cell.
+        // ── Outer border — (h+2)×h px ────────────────────────────────────────
+        // The glyph is 2 px wider than the cell height: right border is 2 px
+        // per PC Tools 9.x reference. Overflows into the adjacent cell.
+        // Using filled rects instead of stroked rects: SKPaint strokes are
+        // centered on the path, which would expand the drawn area unexpectedly.
         _fillPaint.Color = fgColor;
-        _canvas!.DrawRect(new SKRect(x, y, x + h, y + h), _fillPaint);
+        _canvas!.DrawRect(new SKRect(x, y, x + h + 2f, y + h), _fillPaint);
 
-        // ── Inner fill (bg color, inset 1 px on each side) ───────────────────
+        // ── Inner fill (bg color, inset 1 px left/top/bottom, 2 px right) ────
         _fillPaint.Color = bgColor;
-        _canvas.DrawRect(new SKRect(x + 1f, y + 1f, x + h - 1f, y + h - 1f),
+        _canvas.DrawRect(new SKRect(x + 1f, y + 1f, x + h, y + h - 1f),
                          _fillPaint);
 
-        // ── Dash (fg color, fixed pixel offsets within 16×16 glyph) ──────────────
-        // Left=3px, top=6px, width=CellHeight-6px (10px at 16px), height=3px.
+        // ── Dash (fg color, fixed pixel offsets within the glyph) ────────────
+        // Left=3px, top=6px, width=CellHeight-5px (11px at 16px), height=3px.
         float dashX = x + 3f;
         float dashY = y + 6f;
-        float dashWidth = h - 6f;
+        float dashWidth = h - 5f;
         float dashHeight = 3f;
 
         _fillPaint.Color = fgColor;
@@ -428,7 +419,7 @@ public sealed class TuiRenderContext : IDisposable
         RequireCanvas();
 
         SKColor baseColor = ResolveColor(TuiColorRole.WindowShadow);
-        byte alpha = (byte)(255 * Math.Clamp(Theme.ShadowOpacity, 0f, 1f));
+        byte alpha = (byte)(255 * Math.Clamp(TuiTheme.ShadowOpacity, 0f, 1f));
         SKColor shadowColor = baseColor.WithAlpha(alpha);
 
         // Convert element bounds to pixels.
@@ -438,8 +429,8 @@ public sealed class TuiRenderContext : IDisposable
         float ph = height * Grid.CellHeight;
 
         // Shadow offsets are in pixels (not grid cells).
-        float ox = Theme.ShadowOffsetX;
-        float oy = Theme.ShadowOffsetY;
+        float ox = TuiTheme.ShadowOffsetX;
+        float oy = TuiTheme.ShadowOffsetY;
 
         _fillPaint.Color = shadowColor;
 
@@ -448,49 +439,6 @@ public sealed class TuiRenderContext : IDisposable
 
         // Bottom strip — starts after the shadow offset to avoid corner overlap
         _canvas.DrawRect(px + ox, py + ph, pw - ox, oy, _fillPaint);
-    }
-
-    // ── Desktop pattern ───────────────────────────────────────────────────────
-
-    /// <summary>
-    /// Draws the full-screen desktop background pattern as defined by
-    /// <paramref name="pattern"/>.
-    /// </summary>
-    /// <param name="pattern">
-    /// The pattern style. <see cref="TuiDesktopPattern.None"/> fills with
-    /// a solid <see cref="TuiColorRole.DesktopBackground"/> color only.
-    /// </param>
-    public void DrawDesktopPattern(TuiDesktopPattern pattern)
-    {
-        RequireCanvas();
-
-        // Always fill the solid background first.
-        _fillPaint.Color = ResolveColor(TuiColorRole.DesktopBackground);
-        _canvas!.DrawRect(0, 0, Grid.ScreenWidth, Grid.ScreenHeight, _fillPaint);
-
-        if (pattern == TuiDesktopPattern.None)
-            return;
-
-        SKColor dotColor = ResolveColor(TuiColorRole.DesktopPatternDot);
-
-        switch (pattern)
-        {
-            case TuiDesktopPattern.DotGrid:
-                DrawPatternDotGrid(dotColor);
-                break;
-
-            case TuiDesktopPattern.Checkerboard:
-                DrawPatternCheckerboard(dotColor);
-                break;
-
-            case TuiDesktopPattern.HorizontalLines:
-                DrawPatternHorizontalLines(dotColor);
-                break;
-
-            case TuiDesktopPattern.VerticalLines:
-                DrawPatternVerticalLines(dotColor);
-                break;
-        }
     }
 
     // ── Clipping ──────────────────────────────────────────────────────────────
@@ -577,7 +525,7 @@ public sealed class TuiRenderContext : IDisposable
     }
 
     /// <summary>
-    /// Builds the 12×19 pixel-art mouse pointer bitmap using the active theme's
+    /// Builds the 12×20 pixel-art mouse pointer bitmap using the active theme's
     /// <see cref="TuiColorRole.MouseCursorFill"/> and
     /// <see cref="TuiColorRole.MouseCursorOutline"/> colors.
     /// </summary>
@@ -585,7 +533,7 @@ public sealed class TuiRenderContext : IDisposable
     /// Pixel values: <c>0</c> = transparent, <c>1</c> = fill, <c>2</c> = outline.
     /// Called once and cached in <see cref="_cursorBitmap"/>.
     /// </remarks>
-    private SKBitmap BuildCursorBitmap()
+    private static SKBitmap BuildCursorBitmap()
     {
         // 0 = transparent, 1 = fill, 2 = outline.
         ReadOnlySpan<byte> pixels =
@@ -600,19 +548,20 @@ public sealed class TuiRenderContext : IDisposable
             2, 1, 1, 1, 1, 1, 1, 1, 2, 0, 0, 0,
             2, 1, 1, 1, 1, 1, 1, 1, 1, 2, 0, 0,
             2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 0,
-            2, 1, 1, 1, 1, 1, 1, 2, 2, 1, 1, 2,
-            2, 1, 1, 2, 2, 1, 1, 2, 0, 2, 2, 2,
+            2, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2,
+            2, 1, 1, 1, 2, 1, 1, 2, 0, 0, 0, 0,
             2, 1, 1, 2, 2, 1, 1, 2, 0, 0, 0, 0,
-            2, 1, 2, 0, 2, 1, 1, 1, 2, 0, 0, 0,
-            2, 2, 2, 0, 0, 2, 1, 1, 2, 0, 0, 0,
-            0, 0, 0, 0, 0, 2, 1, 1, 1, 2, 0, 0,
+            2, 1, 2, 0, 2, 2, 1, 1, 2, 0, 0, 0,
+            2, 2, 0, 0, 0, 2, 1, 1, 2, 0, 0, 0,
+            2, 0, 0, 0, 0, 0, 2, 1, 1, 2, 0, 0,
             0, 0, 0, 0, 0, 0, 2, 1, 1, 2, 0, 0,
-            0, 0, 0, 0, 0, 0, 2, 1, 1, 2, 0, 0,
-            0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 2, 1, 1, 2, 0,
+            0, 0, 0, 0, 0, 0, 0, 2, 1, 1, 2, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 0, 0,
         ];
 
         const int width = 12;
-        const int height = 19;
+        const int height = 20;
 
         SKColor fill = ResolveColor(TuiColorRole.MouseCursorFill);
         SKColor outline = ResolveColor(TuiColorRole.MouseCursorOutline);
@@ -651,10 +600,10 @@ public sealed class TuiRenderContext : IDisposable
 
     /// <summary>
     /// Resolves a <see cref="TuiColorRole"/> to its concrete <see cref="SKColor"/>
-    /// using the active theme palette.
+    /// using the fixed EGA-based color map.
     /// </summary>
-    private SKColor ResolveColor(TuiColorRole role)
-        => Theme.Palette.GetOrDefault(role);
+    private static SKColor ResolveColor(TuiColorRole role)
+        => TuiPalette.Resolve(role);
 
     /// <summary>
     /// Fills a rectangle specified in grid coordinates using <see cref="_fillPaint"/>.
@@ -668,54 +617,6 @@ public sealed class TuiRenderContext : IDisposable
             height * Grid.CellHeight,
             _fillPaint);
 
-    // ── Desktop pattern helpers ───────────────────────────────────────────────
-
-    private void DrawPatternDotGrid(SKColor color)
-    {
-        // Place one dot per cell at the center of each grid cell.
-        // Matches the classic Norton Commander / PC Tools dot-grid desktop.
-        _fillPaint.Color = color;
-        float dotSize = Math.Max(1f, Grid.CellWidth * 0.15f);
-        float dotOffX = (Grid.CellWidth - dotSize) * 0.5f;
-        float dotOffY = (Grid.CellHeight - dotSize) * 0.5f;
-
-        for (int r = 0; r < Grid.Rows; r++)
-            for (int c = 0; c < Grid.Columns; c++)
-                _canvas!.DrawRect(
-                    Grid.PixelX(c) + dotOffX,
-                    Grid.PixelY(r) + dotOffY,
-                    dotSize, dotSize,
-                    _fillPaint);
-    }
-
-    private void DrawPatternCheckerboard(SKColor color)
-    {
-        _fillPaint.Color = color;
-        for (int r = 0; r < Grid.Rows; r++)
-            for (int c = 0; c < Grid.Columns; c++)
-                if ((r + c) % 2 == 0)
-                    DrawPixelRect(c, r, 1, 1);
-    }
-
-    private void DrawPatternHorizontalLines(SKColor color)
-    {
-        _fillPaint.Color = color;
-        for (int r = 0; r < Grid.Rows; r += 2)
-        {
-            _canvas!.DrawRect(0f, Grid.PixelY(r) + Grid.CellHeight - 1f,
-                              Grid.ScreenWidth, 1f, _fillPaint);
-        }
-    }
-
-    private void DrawPatternVerticalLines(SKColor color)
-    {
-        _fillPaint.Color = color;
-        for (int c = 0; c < Grid.Columns; c += 2)
-        {
-            _canvas!.DrawRect(Grid.PixelX(c) + Grid.CellWidth - 1f, 0f,
-                              1f, Grid.ScreenHeight, _fillPaint);
-        }
-    }
     // ── IDisposable ───────────────────────────────────────────────────────────
 
     /// <summary>

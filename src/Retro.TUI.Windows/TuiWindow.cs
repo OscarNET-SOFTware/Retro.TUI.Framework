@@ -188,8 +188,9 @@ public class TuiWindow : TuiGroup
     ///   </description></item>
     ///   <item><description>
     ///     <see cref="TuiMouseAction.ButtonDown"/> on the system-menu close glyph
-    ///     (column <see cref="TuiView.AbsCol"/>, row <see cref="TuiView.AbsRow"/>)
-    ///     when <see cref="ShowTitle"/> is <see langword="true"/>: emits
+    ///     (columns <see cref="TuiView.AbsCol"/> and <see cref="TuiView.AbsCol"/>+1,
+    ///     row <see cref="TuiView.AbsRow"/>) when <see cref="ShowTitle"/> is
+    ///     <see langword="true"/>: emits
     ///     <see cref="TuiCommandEvent"/>(<see cref="TuiCommand.Close"/>) to the
     ///     parent chain and returns <see langword="true"/>.
     ///   </description></item>
@@ -231,9 +232,11 @@ public class TuiWindow : TuiGroup
         }
 
         // ── Close button ([-]) ────────────────────────────────────────────────
-        // The glyph is drawn as a 16×16 px square (CellHeight × CellHeight) which
-        // overflows ~7 px into AbsCol+1 on a 9 px wide cell. Both cells are included
-        // in the hit-test so the entire visible glyph is clickable.
+        // The glyph is drawn as 18×16 px (CellHeight+2 wide × CellHeight tall)
+        // per PC Tools 9.x reference. On a 9 px wide cell it overflows into
+        // AbsCol+1. Both cells are included in the hit-test; the rightmost 1 px
+        // of the glyph falls inside AbsCol+2 but is not individually targetable
+        // at cell resolution.
         if (mouse.Action == TuiMouseAction.ButtonDown
             && ShowTitle
             && (mouse.Col == AbsCol || mouse.Col == AbsCol + 1)

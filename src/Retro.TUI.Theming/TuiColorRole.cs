@@ -22,9 +22,6 @@ namespace Retro.TUI.Theming;
 /// Roles are semantic: they name <em>what</em> a color is used for, not which color it is.
 /// The actual color values are supplied by a <see cref="TuiPalette"/> inside a <see cref="TuiTheme"/>.
 /// No view or widget may hard-code a color; all rendering must resolve colors through this enum.
-/// <para/>
-/// Role inventory and PC Tools 9.x reference values are documented in
-/// <c>docs/theming-reference.md</c> and <c>docs/theming-reference.es.md</c>.
 /// </remarks>
 public enum TuiColorRole
 {
@@ -32,12 +29,6 @@ public enum TuiColorRole
 
     /// <summary>Background fill color of the desktop area.</summary>
     DesktopBackground,
-
-    /// <summary>
-    /// Color of the dot or pixel used to render the desktop pattern.
-    /// Only relevant when <see cref="TuiTheme.DesktopPattern"/> is not <see cref="TuiDesktopPattern.None"/>.
-    /// </summary>
-    DesktopPatternDot,
 
     // ── Application title bar ─────────────────────────────────────────────
 

@@ -13,8 +13,6 @@
 // </copyright>
 // ---------------------------------------------------------------------------------------------------------------------
 
-using System.Collections;
-
 using Retro.TUI.Events;
 using Retro.TUI.Hosting;
 using Retro.TUI.Rendering;
@@ -41,7 +39,7 @@ namespace Retro.TUI.Core;
 /// // Entry point:
 /// using var host = new SdlHost();
 /// var options = new TuiHostOptions { Title = "My App", Width = 720, Height = 400 };
-/// new MyApp().Run(host, PcTools9Theme.Instance, options);
+/// new MyApp().Run(host, options);
 /// </code>
 /// <para/>
 /// <b>Lifecycle</b> (executed by <see cref="Run"/> in order):
@@ -50,7 +48,7 @@ namespace Retro.TUI.Core;
 ///     <c>host.Initialize(options)</c> — creates and shows the SDL2 window.
 ///   </description></item>
 ///   <item><description>
-///     Font and grid are initialised from the theme.
+///     Font and grid are initialised from <see cref="TuiTheme"/>.
 ///   </description></item>
 ///   <item><description>
 ///     <see cref="Desktop"/> is sized to fill the full grid.
@@ -121,28 +119,23 @@ public abstract class TuiApplication : IDisposable
     /// <paramref name="host"/> for the duration of the session and disposes it
     /// when <see cref="Run"/> returns.
     /// </param>
-    /// <param name="theme">
-    /// The visual theme to apply. Controls palette, font, desktop pattern and
-    /// shadow parameters.
-    /// </param>
     /// <param name="options">
     /// Host configuration: window title, pixel dimensions and display flags.
     /// All three <c>required</c> properties (<c>Title</c>, <c>Width</c>,
     /// <c>Height</c>) must be set before passing this value.
     /// </param>
     /// <exception cref="ArgumentNullException">
-    /// Thrown when <paramref name="host"/>, <paramref name="theme"/> or
-    /// <paramref name="options"/> is <see langword="null"/>.
+    /// Thrown when <paramref name="host"/> or <paramref name="options"/> is
+    /// <see langword="null"/>.
     /// </exception>
     /// <remarks>
     /// This method blocks the calling thread until the message loop exits.
     /// It is designed to be called from the application entry point and returns
     /// only when the user closes the window or <see cref="RequestQuit"/> is called.
     /// </remarks>
-    public void Run(ITuiHost host, TuiTheme theme, TuiHostOptions options)
+    public void Run(ITuiHost host, TuiHostOptions options)
     {
         ArgumentNullException.ThrowIfNull(host);
-        ArgumentNullException.ThrowIfNull(theme);
         ArgumentNullException.ThrowIfNull(options);
 
         using ITuiHost ownedHost = host;
@@ -155,14 +148,14 @@ public abstract class TuiApplication : IDisposable
         // ── 2. Load font and initialize the grid ──────────────────────────────
         using var font = new TuiFont();
         font.Load(
-            typeface: ResolveTypeface(theme),
-            size: theme.FontSize);
+            typeface: ResolveTypeface(),
+            size: TuiTheme.FontSize);
 
         var grid = new TuiGrid();
         grid.Initialize(ownedHost.PixelWidth, ownedHost.PixelHeight, font.SkFont);
 
         // ── 3. Create the render context ──────────────────────────────────────
-        using var renderCtx = new TuiRenderContext(grid, font, theme);
+        using var renderCtx = new TuiRenderContext(grid, font);
         _renderCtx = renderCtx;
 
         // ── 4. Size and expose the desktop ────────────────────────────────────
@@ -362,18 +355,18 @@ public abstract class TuiApplication : IDisposable
     // ── Private helpers ───────────────────────────────────────────────────────
 
     /// <summary>
-    /// Resolves the SkiaSharp typeface for the active theme.
+    /// Resolves the SkiaSharp typeface for the active font configuration.
     /// </summary>
     /// <remarks>
     /// Uses <see cref="TuiTheme.Typeface"/> directly when non-null (the preferred
-    /// path for theme packages that load fonts from embedded resources, since
+    /// path for fonts loaded from embedded resources, since
     /// <c>SKFontManager.RegisterTypeface</c> was removed in SkiaSharp 3.x).
     /// Falls back to <c>SKFontManager.Default.MatchFamily</c> using
     /// <see cref="TuiTheme.FontFamily"/>, and finally to
     /// <c>SKTypeface.Default</c> when neither resolves the typeface.
     /// </remarks>
-    private static SkiaSharp.SKTypeface ResolveTypeface(TuiTheme theme)
-        => theme.Typeface
-           ?? SkiaSharp.SKFontManager.Default.MatchFamily(theme.FontFamily)
+    private static SkiaSharp.SKTypeface ResolveTypeface()
+        => TuiTheme.Typeface
+           ?? SkiaSharp.SKFontManager.Default.MatchFamily(TuiTheme.FontFamily)
            ?? SkiaSharp.SKTypeface.Default;
 }

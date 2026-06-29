@@ -46,8 +46,9 @@ de usuario de texto (TUI), con las siguientes características fundamentales:
   embebidas y paleta de colores EGA/CGA auténtica.
 - **Modelo de componentes**: árbol de vistas jerarquizado, sistema de eventos tipado,
   gestión de foco y modal stack, inspirado en la arquitectura de Turbo Vision.
-- **Theming**: sistema de temas intercambiable desde el diseño inicial. El tema por
-  defecto reproduce fielmente la estética de PC Tools 9.x de Central Point Software.
+- **Paleta EGA fija**: paleta de 16 colores EGA con roles de color semánticos
+  (`TuiColorRole`). Los colores son fijos y fieles a la estética de PC Tools 9.x
+  de Central Point Software.
 - **Idiomático en C#**: nomenclatura, patrones y convenciones propias de C# moderno
   (.NET 10+). No es una traducción 1:1 de Turbo Vision.
 
@@ -59,7 +60,7 @@ de usuario de texto (TUI), con las siguientes características fundamentales:
 
 - Un framework para construir aplicaciones TUI de escritorio con aspecto retro.
 - Una librería reutilizable y distribuible como paquetes NuGet independientes por capa.
-- Una base extensible sobre la que construir temas, controles y comportamientos.
+- Una base extensible sobre la que construir controles y comportamientos propios.
 
 ### No es
 
@@ -94,9 +95,10 @@ de componentes. Este framework adopta su filosofía y la traduce al paradigma C#
 
 Referencia estética visual. Características reproducidas:
 
-- Paleta EGA de 16 colores con los 9 colores exactos de PC Tools.
-- Fuente monoespaciada IBM VGA (PxPlus IBM VGA 9x16), integrada como recurso.
-- Fondo de escritorio con patrón de puntos.
+- Paleta EGA estándar de 16 colores mapeada a roles semánticos, con dos grises
+  adicionales no EGA para barras de título inactivas y pistas de scroll bar.
+- Fuente monoespaciada IBM VGA (PxPlus IBM VGA 9x16), integrada como recurso
+  en `Retro.TUI.Theming`.
 - Barra de título de la aplicación al estilo de Norton/PCTools.
 - Bordes de ventana con líneas geométricas (no caracteres Unicode para dibujar recuadros).
 - Sombras semitransparentes en ventanas y cuadros de diálogo.
@@ -132,13 +134,16 @@ Ejemplos: `TuiView`, `TuiDialog`, `TuiMenuBar`, `TuiPalette`, `TuiTheme`.
 **Decisión**: jerarquía de `abstract record TuiEvent` con subtipos para cada tipo de evento.
 Cola implementada con `System.Threading.Channels.Channel<TuiEvent>`.
 
-### 4.4 Temas: roles semánticos + paletas intercambiables
+### 4.4 Sistema de color: paleta EGA fija + roles semánticos
 
-**Decisión**: separación en tres conceptos: `TuiColorRole` (enumeración semántica),
-`TuiPalette` (mapa de roles a colores) y `TuiTheme` (paleta + fuente + métricas).
+**Decisión**: el esquema de color es fijo y está definido en tres clases estáticas —
+`TuiEgaPalette` (16 constantes de color EGA canónicas), `TuiColorMap` (mapeo interno
+de `TuiColorRole` a `SKColor`) y `TuiPalette` (método público estático
+`Resolve(TuiColorRole)`). `TuiTheme` es una clase estática que contiene únicamente
+parámetros de tipografía y sombra.
 
-Ningún control tiene colores predefinidos. Cambiar la apariencia completa de la aplicación
-es cuestión de cambiar la instancia activa de `TuiTheme`.
+Ningún control tiene colores predefinidos. Todo el código de renderizado resuelve
+los colores a través de `TuiPalette.Resolve(TuiColorRole)`.
 
 ### 4.5 Proyectos separados por capa
 
@@ -160,31 +165,30 @@ comentarios XML en toda la API pública, tipos de referencia anulables habilitad
 ```
 Retro.TUI.Framework.sln
 │
-├── src/
-│   ├── Retro.TUI.Hosting/         Host de ventana e input (SDL2)
-│   ├── Retro.TUI.Events/          Jerarquía de eventos y comandos
-│   ├── Retro.TUI.Theming/         Paletas, temas y roles de color
-│   ├── Retro.TUI.Rendering/       Motor de renderizado (SkiaSharp)
-│   ├── Retro.TUI.Core/            Application, message loop
-│   ├── Retro.TUI.Views/           TuiView, TuiGroup, TuiDesktop
-│   ├── Retro.TUI.Windows/         TuiWindow, TuiDialog
-│   └── Retro.TUI.Widgets/         Controles estándar
-│
-├── themes/
-│   └── Retro.TUI.Theme.PcTools9/  Tema PC Tools 9 como paquete separado
+├── docs/
+│   └── architecture.md            Diseño técnico detallado
 │
 ├── samples/
-│   └── Retro.TUI.Sample.PcTools/  App de demostración
+│   └── Retro.TUI.Sample.Basic/    Aplicación de demostración básica
 │
-├── tests/
-│   ├── Retro.TUI.Events.Tests/
-│   ├── Retro.TUI.Theming.Tests/
-│   ├── Retro.TUI.Rendering.Tests/
-│   ├── Retro.TUI.Views.Tests/
-│   └── Retro.TUI.Widgets.Tests/
+├── src/
+│   ├── Retro.TUI.Core/            Aplicación, bucle de mensajes
+│   ├── Retro.TUI.Events/          Jerarquía de eventos y comandos
+│   ├── Retro.TUI.Hosting/         Host de ventana y entrada (SDL2)
+│   ├── Retro.TUI.Rendering/       Motor de renderizado (SkiaSharp)
+│   ├── Retro.TUI.Theming/         Paletas, temas y roles de color
+│   ├── Retro.TUI.Views/           TuiView, TuiGroup, TuiDesktop
+│   ├── Retro.TUI.Widgets/         Controles estándar
+│   └── Retro.TUI.Windows/         TuiWindow, TuiDialog
 │
-└── docs/
-    └── architecture.es.md
+└── tests/
+    ├── Retro.TUI.Core.Tests/
+    ├── Retro.TUI.Events.Tests/
+    ├── Retro.TUI.Hosting.Tests/
+    ├── Retro.TUI.Rendering.Tests/
+    ├── Retro.TUI.Theming.Tests/
+    ├── Retro.TUI.Views.Tests/
+    └── Retro.TUI.Windows.Tests/
 ```
 
 ### Dependencias del proyecto
@@ -203,8 +207,6 @@ Retro.TUI.Widgets
                             └── Retro.TUI.Hosting
                                     └── Retro.TUI.Events
 ```
-
-`Retro.TUI.Theme.PcTools9` depende únicamente de `Retro.TUI.Theming`.
 
 ---
 
@@ -259,8 +261,8 @@ Para obtener información técnica completa sobre cada capa, consulta:
 `v0.1.0`
 
 - [x] ✅ `Retro.TUI.Events`: jerarquía de registros, `TuiCommand`, `TuiKey`
-- [x] ✅ `Retro.TUI.Theming`: `TuiColorRole`, `TuiPalette`, `TuiTheme`
-- [x] ✅ `Retro.TUI.Theme.PcTools9`: paleta y fuente IBM VGA
+- [x] ✅ `Retro.TUI.Theming`: `TuiColorRole`, `TuiEgaPalette`, `TuiColorMap`,
+  `TuiPalette` (estático), `TuiTheme` (estático) — fuente IBM VGA embebida como recurso
 - [x] ✅ `Retro.TUI.Hosting`: `ITuiHost`, `SdlHost`
 - [x] ✅ `Retro.TUI.Rendering`: `TuiRenderContext`, `TuiGrid`, `TuiFont`
 
@@ -269,7 +271,6 @@ Para obtener información técnica completa sobre cada capa, consulta:
 
 - [x] ✅ `Retro.TUI.Views`: `TuiView`, `TuiGroup`, `TuiDesktop`
 - [x] ✅ `Retro.TUI.Core`: `TuiApplication`, `TuiMessageLoop`, `TuiFocusManager`
-- [x] ✅ Fondo de escritorio con patrón de puntos
 - [x] ✅ Envío de eventos de teclado y ratón al árbol
 - [x] ✅ Cursor de ratón personalizado
 
