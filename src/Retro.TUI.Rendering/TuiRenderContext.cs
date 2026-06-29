@@ -315,16 +315,19 @@ public sealed class TuiRenderContext : IDisposable
     /// Pixel layout (reference: IBM VGA 9×16 cell):
     /// <list type="bullet">
     ///   <item><description>
-    ///     Outer border: 1 px stroke rectangle covering the full cell.
+    ///     Outer border: 1 px on left, top and bottom; 2 px on the right.
+    ///     Total glyph size: <c>CellHeight + 2</c> px wide × <c>CellHeight</c> px tall
+    ///     (18×16 px on a 9×16 IBM VGA cell). The glyph overflows into the adjacent
+    ///     cell by <c>CellHeight + 2 - CellWidth</c> px.
     ///   </description></item>
     ///   <item><description>
-    ///     Inner fill: <paramref name="bg"/>-colored rectangle inset by 1 px on all sides.
+    ///     Inner fill: <paramref name="bg"/>-colored rectangle inset 1 px on the
+    ///     left, top and bottom; 2 px on the right.
     ///   </description></item>
     ///   <item><description>
     ///     Dash: <paramref name="fg"/>-colored filled rectangle,
-    ///     width = <c>CellWidth - 4 px</c> (2 px margin left + right),
-    ///     height ≈ <c>CellHeight × 3/16</c> (3 px at 16 px cell height),
-    ///     positioned 2 px from the left and 5 px from the top of the cell.
+    ///     width = <c>CellHeight - 6 px</c> (10 px at 16 px cell height),
+    ///     height = 3 px, positioned 3 px from the left and 6 px from the top.
     ///   </description></item>
     /// </list>
     /// </remarks>
@@ -334,29 +337,29 @@ public sealed class TuiRenderContext : IDisposable
 
         float x = Grid.PixelX(col);
         float y = Grid.PixelY(row);
-        float w = Grid.CellWidth;
         float h = Grid.CellHeight;
 
         SKColor fgColor = ResolveColor(fg);
         SKColor bgColor = ResolveColor(bg);
 
-        // ── Outer border — fill full cell with fg color ───────────────────────
-        // Using a filled rect instead of a stroked rect: SKPaint strokes are
-        // centered on the path, which expands the drawn area by StrokeWidth/2
-        // on each side and produces a 10×17 px result on a 9×16 cell.
+        // ── Outer border — (h+2)×h px ────────────────────────────────────────
+        // The glyph is 2 px wider than the cell height: right border is 2 px
+        // per PC Tools 9.x reference. Overflows into the adjacent cell.
+        // Using filled rects instead of stroked rects: SKPaint strokes are
+        // centered on the path, which would expand the drawn area unexpectedly.
         _fillPaint.Color = fgColor;
-        _canvas!.DrawRect(new SKRect(x, y, x + h, y + h), _fillPaint);
+        _canvas!.DrawRect(new SKRect(x, y, x + h + 2f, y + h), _fillPaint);
 
-        // ── Inner fill (bg color, inset 1 px on each side) ───────────────────
+        // ── Inner fill (bg color, inset 1 px left/top/bottom, 2 px right) ────
         _fillPaint.Color = bgColor;
-        _canvas.DrawRect(new SKRect(x + 1f, y + 1f, x + h - 1f, y + h - 1f),
+        _canvas.DrawRect(new SKRect(x + 1f, y + 1f, x + h, y + h - 1f),
                          _fillPaint);
 
-        // ── Dash (fg color, fixed pixel offsets within 16×16 glyph) ──────────────
-        // Left=3px, top=6px, width=CellHeight-6px (10px at 16px), height=3px.
+        // ── Dash (fg color, fixed pixel offsets within the glyph) ────────────
+        // Left=3px, top=6px, width=CellHeight-5px (11px at 16px), height=3px.
         float dashX = x + 3f;
         float dashY = y + 6f;
-        float dashWidth = h - 6f;
+        float dashWidth = h - 5f;
         float dashHeight = 3f;
 
         _fillPaint.Color = fgColor;
