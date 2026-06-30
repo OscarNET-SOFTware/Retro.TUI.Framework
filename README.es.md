@@ -188,6 +188,7 @@ Retro.TUI.Framework.sln
     ├── Retro.TUI.Rendering.Tests/
     ├── Retro.TUI.Theming.Tests/
     ├── Retro.TUI.Views.Tests/
+    ├── Retro.TUI.Widgets.Tests/
     └── Retro.TUI.Windows.Tests/
 ```
 
@@ -290,7 +291,7 @@ Para obtener información técnica completa sobre cada capa, consulta:
 - [ ] `TuiMenuBar` con apertura de menú y desplazamiento del cursor
 - [ ] `TuiStatusBar` con teclas de función
 - [ ] `TuiButton` / `TuiCommand`
-- [ ] `TuiLabel`
+- [x] ✅ `TuiLabel`
 - [ ] `TuiInputLine` con cursor parpadeante y edición básica
 
 ### Milestone 5 — Controles avanzados

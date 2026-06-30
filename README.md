@@ -189,6 +189,7 @@ Retro.TUI.Framework.sln
     ├── Retro.TUI.Rendering.Tests/
     ├── Retro.TUI.Theming.Tests/
     ├── Retro.TUI.Views.Tests/
+    ├── Retro.TUI.Widgets.Tests/
     └── Retro.TUI.Windows.Tests/
 ```
 
@@ -291,7 +292,7 @@ For the complete technical detail of each layer, see:
 - [ ] `TuiMenuBar` with hover and menu opening
 - [ ] `TuiStatusBar` with function keys
 - [ ] `TuiButton` / `TuiCommand`
-- [ ] `TuiLabel`
+- [x] ✅ `TuiLabel`
 - [ ] `TuiInputLine` with blinking cursor and basic editing
 
 ### Milestone 5 — Advanced controls

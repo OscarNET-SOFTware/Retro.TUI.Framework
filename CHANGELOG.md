@@ -15,7 +15,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   canonical EGA color. Single source of truth for all color values in the framework.
   Two non-EGA grays (`#696969` mid-gray and `#CACACA` light-gray) are used
   internally for roles that require intermediate values.
-- 339 tests passing across all projects (0 failed).
+- `Retro.TUI.Widgets` project: new leaf layer (`Widgets → Windows`), establishing
+  the M4 widgets layer described in architecture.md §8.
+- `TuiLabel`: static, non-focusable single-line text display. `Text` property
+  with null-guard and change-only invalidation. `ForegroundRole`/`BackgroundRole`
+  properties (default `LabelForeground`/`LabelBackground`) allow selecting any
+  existing `TuiColorRole` per instance without reopening the fixed EGA palette.
+- `TuiFocusEvent` dispatch: `TuiMessageLoop.DispatchEvents` now wires
+  `TuiFocusManager.FocusChanged` to `TuiFocusEvent(Lost)`/`TuiFocusEvent(Gained)`
+  delivered to the affected views via `HandleEvent`, in that order. Previously
+  `TuiFocusEvent` existed in `Retro.TUI.Events` but was never dispatched.
+- 359 tests passing across all projects (0 failed).
 
 ### Changed
 

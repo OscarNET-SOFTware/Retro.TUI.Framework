@@ -9,6 +9,7 @@
     <Project Path="src/Retro.TUI.Rendering/Retro.TUI.Rendering.csproj" />
     <Project Path="src/Retro.TUI.Theming/Retro.TUI.Theming.csproj" />
     <Project Path="src/Retro.TUI.Views/Retro.TUI.Views.csproj" />
+    <Project Path="src/Retro.TUI.Widgets/Retro.TUI.Widgets.csproj" />
     <Project Path="src/Retro.TUI.Windows/Retro.TUI.Windows.csproj" />
   </Folder>
   <Folder Name="/tests/">
@@ -18,6 +19,7 @@
     <Project Path="tests/Retro.TUI.Rendering.Tests/Retro.TUI.Rendering.Tests.csproj" />
     <Project Path="tests/Retro.TUI.Theming.Tests/Retro.TUI.Theming.Tests.csproj" />
     <Project Path="tests/Retro.TUI.Views.Tests/Retro.TUI.Views.Tests.csproj" />
+    <Project Path="tests/Retro.TUI.Widgets.Tests/Retro.TUI.Widgets.Tests.csproj" />
     <Project Path="tests/Retro.TUI.Windows.Tests/Retro.TUI.Windows.Tests.csproj" />
   </Folder>
 </Solution>

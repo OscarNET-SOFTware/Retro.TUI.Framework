@@ -1,0 +1,11 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Retro.TUI.Widgets</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Retro.TUI.Widgets\Retro.TUI.Widgets.csproj" />
+  </ItemGroup>
+
+</Project>

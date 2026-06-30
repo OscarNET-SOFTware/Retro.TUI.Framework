@@ -16,6 +16,7 @@
 using Retro.TUI.Core;
 using Retro.TUI.Events;
 using Retro.TUI.Views;
+using Retro.TUI.Widgets;
 using Retro.TUI.Windows;
 
 namespace Retro.TUI.Sample.Basic;
@@ -56,6 +57,27 @@ internal sealed class BasicApp : TuiApplication
 
         Desktop.Add(windowA);
         Desktop.Add(windowB);
+
+        // Visual check for TuiLabel: short text, and text longer than its
+        // declared Width to confirm clipping (not wrapping) behaviour.
+        var shortLabel = new TuiLabel
+        {
+            Text = "Hello, Retro.TUI!",
+            Col = 2,
+            Row = 2,
+            Width = 20,
+            Height = 1,
+        };
+        var clippedLabel = new TuiLabel
+        {
+            Text = "This text is intentionally longer than its declared width",
+            Col = 2,
+            Row = 4,
+            Width = 20,
+            Height = 1,
+        };
+        windowA.Add(shortLabel);
+        windowA.Add(clippedLabel);
     }
 
     /// <inheritdoc/>
