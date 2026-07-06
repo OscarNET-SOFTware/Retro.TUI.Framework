@@ -18,8 +18,9 @@ using SkiaSharp;
 namespace Retro.TUI.Theming;
 
 /// <summary>
-/// Provides color resolution for all <see cref="TuiColorRole"/> values
-/// using the framework's fixed EGA-based color scheme.
+/// Provides color resolution for all <see cref="TuiColorRole"/> and
+/// <see cref="TuiEgaColor"/> values using the framework's fixed EGA-based
+/// color scheme.
 /// </summary>
 /// <remarks>
 /// The color scheme is fixed and cannot be customized at runtime.
@@ -38,4 +39,38 @@ public static class TuiPalette
     /// Thrown when <paramref name="role"/> has no entry in the color map.
     /// </exception>
     public static SKColor Resolve(TuiColorRole role) => TuiColorMap.Resolve(role);
+
+    /// <summary>
+    /// Resolves the <see cref="SKColor"/> corresponding to <paramref name="color"/>.
+    /// </summary>
+    /// <param name="color">One of the 16 canonical EGA colors.</param>
+    /// <returns>
+    /// The <see cref="SKColor"/> from <see cref="TuiEgaPalette"/> that corresponds
+    /// to <paramref name="color"/>.
+    /// </returns>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// Thrown when <paramref name="color"/> is not a defined <see cref="TuiEgaColor"/>
+    /// value (e.g. produced by an invalid enum cast).
+    /// </exception>
+    public static SKColor Resolve(TuiEgaColor color) => color switch
+    {
+        TuiEgaColor.Black => TuiEgaPalette.EgaBlack,
+        TuiEgaColor.Blue => TuiEgaPalette.EgaBlue,
+        TuiEgaColor.Green => TuiEgaPalette.EgaGreen,
+        TuiEgaColor.Cyan => TuiEgaPalette.EgaCyan,
+        TuiEgaColor.Red => TuiEgaPalette.EgaRed,
+        TuiEgaColor.Magenta => TuiEgaPalette.EgaMagenta,
+        TuiEgaColor.Brown => TuiEgaPalette.EgaBrown,
+        TuiEgaColor.LightGray => TuiEgaPalette.EgaLightGray,
+        TuiEgaColor.DarkGray => TuiEgaPalette.EgaDarkGray,
+        TuiEgaColor.BrightBlue => TuiEgaPalette.EgaBrightBlue,
+        TuiEgaColor.BrightGreen => TuiEgaPalette.EgaBrightGreen,
+        TuiEgaColor.BrightCyan => TuiEgaPalette.EgaBrightCyan,
+        TuiEgaColor.BrightRed => TuiEgaPalette.EgaBrightRed,
+        TuiEgaColor.BrightMagenta => TuiEgaPalette.EgaBrightMagenta,
+        TuiEgaColor.Yellow => TuiEgaPalette.EgaYellow,
+        TuiEgaColor.White => TuiEgaPalette.EgaWhite,
+        _ => throw new ArgumentOutOfRangeException(nameof(color), color,
+                 $"'{color}' is not a defined {nameof(TuiEgaColor)} value.")
+    };
 }

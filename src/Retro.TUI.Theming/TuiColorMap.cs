@@ -23,7 +23,7 @@ namespace Retro.TUI.Theming;
 /// </summary>
 /// <remarks>
 /// This class is the single source of truth for the framework's fixed color scheme.
-/// All rendering code resolves colors through <see cref="TuiPalette.Resolve"/>,
+/// All rendering code resolves colors through <see cref="TuiPalette.Resolve(TuiColorRole)"/>,
 /// which delegates to <see cref="Resolve"/> here.
 /// <para/>
 /// Two non-EGA grays are used internally for roles that require intermediate
