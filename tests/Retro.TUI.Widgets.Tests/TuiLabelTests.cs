@@ -22,9 +22,9 @@ using SkiaSharp;
 namespace Retro.TUI.Widgets;
 
 /// <summary>
-/// Tests for <see cref="TuiLabel"/>: construction defaults, the
-/// <see cref="TuiLabel.Text"/> contract (null guard, invalidation, no-op on
-/// unchanged value) and the <see cref="TuiLabel.Draw"/> contract.
+/// Tests for <see cref="TuiLabel"/>: construction defaults, property contracts
+/// (null guard, invalidation, no-op on unchanged value) and the
+/// <see cref="TuiLabel.Draw"/> contract.
 /// </summary>
 public sealed class TuiLabelTests
 {
@@ -44,6 +44,15 @@ public sealed class TuiLabelTests
         var label = new TuiLabel();
 
         Assert.False(label.Focusable);
+    }
+
+    [Fact]
+    public void Constructor_DefaultColors_AreNull()
+    {
+        var label = new TuiLabel();
+
+        Assert.Null(label.ForegroundColor);
+        Assert.Null(label.BackgroundColor);
     }
 
     // ── Text property ─────────────────────────────────────────────────────────
@@ -66,7 +75,6 @@ public sealed class TuiLabelTests
         var label = new TuiLabel { Text = "Hello", Col = 0, Row = 0, Width = 10, Height = 1 };
         group.Add(label);
 
-        // First Draw clears the dirty flag set by construction/Add.
         ctx.RenderFrame(surface, c => group.Draw(c));
         Assert.False(label.IsDirty);
 
@@ -89,24 +97,15 @@ public sealed class TuiLabelTests
         ctx.RenderFrame(surface, c => group.Draw(c));
         Assert.False(label.IsDirty);
 
-        label.Text = "Hello"; // same value as before
+        label.Text = "Hello";
 
         Assert.False(label.IsDirty);
     }
 
-    // ── ForegroundRole / BackgroundRole properties ──────────────────────────────
+    // ── ForegroundColor property ──────────────────────────────────────────────
 
     [Fact]
-    public void Constructor_DefaultRoles_AreLabelRoles()
-    {
-        var label = new TuiLabel();
-
-        Assert.Equal(TuiColorRole.LabelForeground, label.ForegroundRole);
-        Assert.Equal(TuiColorRole.LabelBackground, label.BackgroundRole);
-    }
-
-    [Fact]
-    public void ForegroundRole_SetDifferentValue_UpdatesAndInvalidates()
+    public void ForegroundColor_SetValue_WhenWasNull_Invalidates()
     {
         TuiRenderContext ctx = BuildContext(40, 20);
         using SKSurface surface = CreateSurface(40 * 9, 20 * 16);
@@ -118,88 +117,169 @@ public sealed class TuiLabelTests
         ctx.RenderFrame(surface, c => group.Draw(c));
         Assert.False(label.IsDirty);
 
-        label.ForegroundRole = TuiColorRole.StatusForeground;
+        label.ForegroundColor = TuiEgaColor.BrightCyan;
 
-        Assert.Equal(TuiColorRole.StatusForeground, label.ForegroundRole);
+        Assert.Equal(TuiEgaColor.BrightCyan, label.ForegroundColor);
         Assert.True(label.IsDirty);
     }
 
     [Fact]
-    public void ForegroundRole_SetSameValue_DoesNotInvalidate()
+    public void ForegroundColor_SetNull_WhenHadValue_Invalidates()
     {
         TuiRenderContext ctx = BuildContext(40, 20);
         using SKSurface surface = CreateSurface(40 * 9, 20 * 16);
 
         var group = new TuiGroup();
-        var label = new TuiLabel { Col = 0, Row = 0, Width = 10, Height = 1 };
-        group.Add(label);
-
-        ctx.RenderFrame(surface, c => group.Draw(c));
-        Assert.False(label.IsDirty);
-
-        label.ForegroundRole = TuiColorRole.LabelForeground; // same as default
-
-        Assert.False(label.IsDirty);
-    }
-
-    [Fact]
-    public void BackgroundRole_SetDifferentValue_UpdatesAndInvalidates()
-    {
-        TuiRenderContext ctx = BuildContext(40, 20);
-        using SKSurface surface = CreateSurface(40 * 9, 20 * 16);
-
-        var group = new TuiGroup();
-        var label = new TuiLabel { Col = 0, Row = 0, Width = 10, Height = 1 };
-        group.Add(label);
-
-        ctx.RenderFrame(surface, c => group.Draw(c));
-        Assert.False(label.IsDirty);
-
-        label.BackgroundRole = TuiColorRole.StatusBackground;
-
-        Assert.Equal(TuiColorRole.StatusBackground, label.BackgroundRole);
-        Assert.True(label.IsDirty);
-    }
-
-    [Fact]
-    public void BackgroundRole_SetSameValue_DoesNotInvalidate()
-    {
-        TuiRenderContext ctx = BuildContext(40, 20);
-        using SKSurface surface = CreateSurface(40 * 9, 20 * 16);
-
-        var group = new TuiGroup();
-        var label = new TuiLabel { Col = 0, Row = 0, Width = 10, Height = 1 };
-        group.Add(label);
-
-        ctx.RenderFrame(surface, c => group.Draw(c));
-        Assert.False(label.IsDirty);
-
-        label.BackgroundRole = TuiColorRole.LabelBackground; // same as default
-
-        Assert.False(label.IsDirty);
-    }
-
-    [Fact]
-    public void Draw_NonDefaultRoles_DoesNotThrow()
-    {
-        TuiRenderContext ctx = BuildContext(40, 20);
-        using SKSurface surface = CreateSurface(40 * 9, 20 * 16);
-
         var label = new TuiLabel
         {
-            Text = "Error: something went wrong",
-            Col = 2,
-            Row = 2,
-            Width = 30,
+            Col = 0,
+            Row = 0,
+            Width = 10,
             Height = 1,
-            ForegroundRole = TuiColorRole.StatusForeground,
-            BackgroundRole = TuiColorRole.StatusBackground,
+            ForegroundColor = TuiEgaColor.BrightCyan
         };
+        group.Add(label);
 
-        var exception = Record.Exception(() =>
-            ctx.RenderFrame(surface, c => label.Draw(c)));
+        ctx.RenderFrame(surface, c => group.Draw(c));
+        Assert.False(label.IsDirty);
 
-        Assert.Null(exception);
+        label.ForegroundColor = null;
+
+        Assert.Null(label.ForegroundColor);
+        Assert.True(label.IsDirty);
+    }
+
+    [Fact]
+    public void ForegroundColor_SetSameValue_DoesNotInvalidate()
+    {
+        TuiRenderContext ctx = BuildContext(40, 20);
+        using SKSurface surface = CreateSurface(40 * 9, 20 * 16);
+
+        var group = new TuiGroup();
+        var label = new TuiLabel
+        {
+            Col = 0,
+            Row = 0,
+            Width = 10,
+            Height = 1,
+            ForegroundColor = TuiEgaColor.BrightCyan
+        };
+        group.Add(label);
+
+        ctx.RenderFrame(surface, c => group.Draw(c));
+        Assert.False(label.IsDirty);
+
+        label.ForegroundColor = TuiEgaColor.BrightCyan;
+
+        Assert.False(label.IsDirty);
+    }
+
+    [Fact]
+    public void ForegroundColor_SetNull_WhenAlreadyNull_DoesNotInvalidate()
+    {
+        TuiRenderContext ctx = BuildContext(40, 20);
+        using SKSurface surface = CreateSurface(40 * 9, 20 * 16);
+
+        var group = new TuiGroup();
+        var label = new TuiLabel { Col = 0, Row = 0, Width = 10, Height = 1 };
+        group.Add(label);
+
+        ctx.RenderFrame(surface, c => group.Draw(c));
+        Assert.False(label.IsDirty);
+
+        label.ForegroundColor = null;
+
+        Assert.False(label.IsDirty);
+    }
+
+    // ── BackgroundColor property ──────────────────────────────────────────────
+
+    [Fact]
+    public void BackgroundColor_SetValue_WhenWasNull_Invalidates()
+    {
+        TuiRenderContext ctx = BuildContext(40, 20);
+        using SKSurface surface = CreateSurface(40 * 9, 20 * 16);
+
+        var group = new TuiGroup();
+        var label = new TuiLabel { Col = 0, Row = 0, Width = 10, Height = 1 };
+        group.Add(label);
+
+        ctx.RenderFrame(surface, c => group.Draw(c));
+        Assert.False(label.IsDirty);
+
+        label.BackgroundColor = TuiEgaColor.Blue;
+
+        Assert.Equal(TuiEgaColor.Blue, label.BackgroundColor);
+        Assert.True(label.IsDirty);
+    }
+
+    [Fact]
+    public void BackgroundColor_SetNull_WhenHadValue_Invalidates()
+    {
+        TuiRenderContext ctx = BuildContext(40, 20);
+        using SKSurface surface = CreateSurface(40 * 9, 20 * 16);
+
+        var group = new TuiGroup();
+        var label = new TuiLabel
+        {
+            Col = 0,
+            Row = 0,
+            Width = 10,
+            Height = 1,
+            BackgroundColor = TuiEgaColor.Blue
+        };
+        group.Add(label);
+
+        ctx.RenderFrame(surface, c => group.Draw(c));
+        Assert.False(label.IsDirty);
+
+        label.BackgroundColor = null;
+
+        Assert.Null(label.BackgroundColor);
+        Assert.True(label.IsDirty);
+    }
+
+    [Fact]
+    public void BackgroundColor_SetSameValue_DoesNotInvalidate()
+    {
+        TuiRenderContext ctx = BuildContext(40, 20);
+        using SKSurface surface = CreateSurface(40 * 9, 20 * 16);
+
+        var group = new TuiGroup();
+        var label = new TuiLabel
+        {
+            Col = 0,
+            Row = 0,
+            Width = 10,
+            Height = 1,
+            BackgroundColor = TuiEgaColor.Blue
+        };
+        group.Add(label);
+
+        ctx.RenderFrame(surface, c => group.Draw(c));
+        Assert.False(label.IsDirty);
+
+        label.BackgroundColor = TuiEgaColor.Blue;
+
+        Assert.False(label.IsDirty);
+    }
+
+    [Fact]
+    public void BackgroundColor_SetNull_WhenAlreadyNull_DoesNotInvalidate()
+    {
+        TuiRenderContext ctx = BuildContext(40, 20);
+        using SKSurface surface = CreateSurface(40 * 9, 20 * 16);
+
+        var group = new TuiGroup();
+        var label = new TuiLabel { Col = 0, Row = 0, Width = 10, Height = 1 };
+        group.Add(label);
+
+        ctx.RenderFrame(surface, c => group.Draw(c));
+        Assert.False(label.IsDirty);
+
+        label.BackgroundColor = null;
+
+        Assert.False(label.IsDirty);
     }
 
     // ── Draw contract ─────────────────────────────────────────────────────────
@@ -225,6 +305,29 @@ public sealed class TuiLabelTests
             Row = 2,
             Width = 20,
             Height = 1,
+        };
+
+        var exception = Record.Exception(() =>
+            ctx.RenderFrame(surface, c => label.Draw(c)));
+
+        Assert.Null(exception);
+    }
+
+    [Fact]
+    public void Draw_WithColorOverrides_DoesNotThrow()
+    {
+        TuiRenderContext ctx = BuildContext(40, 20);
+        using SKSurface surface = CreateSurface(40 * 9, 20 * 16);
+
+        var label = new TuiLabel
+        {
+            Text = "Error: something went wrong",
+            Col = 2,
+            Row = 2,
+            Width = 30,
+            Height = 1,
+            ForegroundColor = TuiEgaColor.BrightRed,
+            BackgroundColor = TuiEgaColor.Black,
         };
 
         var exception = Record.Exception(() =>

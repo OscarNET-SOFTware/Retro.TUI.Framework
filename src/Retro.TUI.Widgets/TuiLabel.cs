@@ -17,6 +17,8 @@ using Retro.TUI.Rendering;
 using Retro.TUI.Theming;
 using Retro.TUI.Views;
 
+using SkiaSharp;
+
 namespace Retro.TUI.Widgets;
 
 /// <summary>
@@ -29,38 +31,35 @@ namespace Retro.TUI.Widgets;
 /// <para/>
 /// <b>Sizing contract:</b> <see cref="TuiView.Width"/> and <see cref="TuiView.Height"/>
 /// are <em>not</em> derived automatically from <see cref="Text"/>. The owning
-/// container or application code must set them explicitly, exactly as Turbo Vision
-/// requires an explicit <c>TRect</c> for every view. If <see cref="Text"/> is longer
-/// than <see cref="TuiView.Width"/>, the rendered text is clipped — no wrapping, no
-/// implicit resize. A future explicit <c>SizeToFit()</c> helper may be added if a
-/// real use case appears; it must remain opt-in, never automatic.
+/// container or application code must set them explicitly. If <see cref="Text"/> is
+/// longer than <see cref="TuiView.Width"/>, the rendered text is clipped — no
+/// wrapping, no implicit resize.
 /// <para/>
-/// <b>Color contract:</b> colors are always resolved via
-/// <see cref="TuiPalette.Resolve(TuiColorRole)"/>, never hardcoded. By default the
-/// label uses <see cref="TuiColorRole.LabelForeground"/> and
-/// <see cref="TuiColorRole.LabelBackground"/>, but <see cref="ForegroundRole"/> and
-/// <see cref="BackgroundRole"/> can be set to any other existing role to vary the
-/// look per instance (e.g. an error label reusing a warning-themed role) — the fixed
-/// EGA palette from M3.5 stays closed: callers pick among existing semantic roles,
-/// they never supply a raw <c>SKColor</c>.
+/// <b>Color contract:</b> each instance has fixed default semantic roles
+/// (<see cref="TuiColorRole.LabelForeground"/> / <see cref="TuiColorRole.LabelBackground"/>)
+/// that are always resolved via <see cref="TuiPalette.Resolve(TuiColorRole)"/>.
+/// Optionally, <see cref="ForegroundColor"/> and <see cref="BackgroundColor"/> can
+/// override those defaults with any of the 16 canonical EGA colors — still resolved
+/// via <see cref="TuiPalette.Resolve(TuiEgaColor)"/>, never a raw
+/// <see cref="SKColor"/>. This is the canonical color pattern for all widgets in
+/// the framework.
 /// <para/>
 /// <b>Background fill:</b> the declared <see cref="TuiView.Width"/> ×
-/// <see cref="TuiView.Height"/> rectangle is always painted opaque with
-/// <see cref="BackgroundRole"/>, even where <see cref="Text"/> is shorter — the
-/// label never relies on whatever is painted behind it, consistent with
-/// <c>TuiWindow</c>/<c>TuiDialog</c> always painting their own interior.
+/// <see cref="TuiView.Height"/> rectangle is always painted opaque, consistent with
+/// <c>TuiWindow</c> / <c>TuiDialog</c> always painting their own interior.
 /// </remarks>
 public sealed class TuiLabel : TuiView
 {
-    // ── Backing fields ────────────────────────────────────────────────────────
+    // ── Default color roles (fixed per type, not overridable from outside) ────
 
-    // None of these can be auto-properties: every setter validates and/or calls
-    // Invalidate() only when the value actually changes. IDE0032 suppressed to
-    // avoid a spurious auto-property suggestion, same precedent as TuiView._isDirty.
+    private readonly TuiColorRole _foregroundRole = TuiColorRole.LabelForeground;
+    private readonly TuiColorRole _backgroundRole = TuiColorRole.LabelBackground;
+
+    // ── Backing fields ────────────────────────────────────────────────────────
 #pragma warning disable IDE0032
     private string _text = string.Empty;
-    private TuiColorRole _foregroundRole = TuiColorRole.LabelForeground;
-    private TuiColorRole _backgroundRole = TuiColorRole.LabelBackground;
+    private TuiEgaColor? _foregroundColor;
+    private TuiEgaColor? _backgroundColor;
 #pragma warning restore IDE0032
 
     // ── Properties ────────────────────────────────────────────────────────────
@@ -70,9 +69,13 @@ public sealed class TuiLabel : TuiView
     /// </summary>
     /// <value>Defaults to <see cref="string.Empty"/>.</value>
     /// <remarks>
-    /// Setting this property to a different value calls <see cref="TuiView.Invalidate"/>
-    /// automatically. Setting it to the same value is a no-op (no redraw requested).
+    /// Setting this property to a different value calls
+    /// <see cref="TuiView.Invalidate"/> automatically. Setting it to the same
+    /// value is a no-op.
     /// </remarks>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <see langword="null"/> is assigned.
+    /// </exception>
     public string Text
     {
         get => _text;
@@ -89,45 +92,58 @@ public sealed class TuiLabel : TuiView
     }
 
     /// <summary>
-    /// Gets or sets the semantic color role used to resolve the text color.
+    /// Gets or sets an optional EGA color that overrides the default foreground role
+    /// for this instance.
     /// </summary>
-    /// <value>Defaults to <see cref="TuiColorRole.LabelForeground"/>.</value>
+    /// <value>
+    /// <see langword="null"/> (default) — the label uses
+    /// <see cref="TuiColorRole.LabelForeground"/> resolved via
+    /// <see cref="TuiPalette.Resolve(TuiColorRole)"/>.
+    /// Any <see cref="TuiEgaColor"/> value — that specific EGA color is used instead,
+    /// resolved via <see cref="TuiPalette.Resolve(TuiEgaColor)"/>.
+    /// </value>
     /// <remarks>
-    /// Any existing <see cref="TuiColorRole"/> value may be used here — the fixed
-    /// EGA palette stays closed; this only selects which already-mapped role this
-    /// particular label instance resolves against. Setting it to the same value is
-    /// a no-op.
+    /// The fixed EGA palette from M3.5 stays closed: callers pick among the 16
+    /// named EGA entries, never a raw <see cref="SKColor"/>. Setting to the same
+    /// value (including <see langword="null"/> → <see langword="null"/>) is a no-op.
     /// </remarks>
-    public TuiColorRole ForegroundRole
+    public TuiEgaColor? ForegroundColor
     {
-        get => _foregroundRole;
+        get => _foregroundColor;
         set
         {
-            if (_foregroundRole == value)
+            if (_foregroundColor == value)
                 return;
 
-            _foregroundRole = value;
+            _foregroundColor = value;
             Invalidate();
         }
     }
 
     /// <summary>
-    /// Gets or sets the semantic color role used to resolve the background fill color.
+    /// Gets or sets an optional EGA color that overrides the default background role
+    /// for this instance.
     /// </summary>
-    /// <value>Defaults to <see cref="TuiColorRole.LabelBackground"/>.</value>
+    /// <value>
+    /// <see langword="null"/> (default) — the label uses
+    /// <see cref="TuiColorRole.LabelBackground"/> resolved via
+    /// <see cref="TuiPalette.Resolve(TuiColorRole)"/>.
+    /// Any <see cref="TuiEgaColor"/> value — that specific EGA color is used instead,
+    /// resolved via <see cref="TuiPalette.Resolve(TuiEgaColor)"/>.
+    /// </value>
     /// <remarks>
-    /// See <see cref="ForegroundRole"/> for the same role-selection contract,
+    /// See <see cref="ForegroundColor"/> for the same color-override contract,
     /// applied to the background fill painted by <see cref="Draw"/>.
     /// </remarks>
-    public TuiColorRole BackgroundRole
+    public TuiEgaColor? BackgroundColor
     {
-        get => _backgroundRole;
+        get => _backgroundColor;
         set
         {
-            if (_backgroundRole == value)
+            if (_backgroundColor == value)
                 return;
 
-            _backgroundRole = value;
+            _backgroundColor = value;
             Invalidate();
         }
     }
@@ -136,10 +152,10 @@ public sealed class TuiLabel : TuiView
 
     /// <inheritdoc/>
     /// <remarks>
-    /// Draws <see cref="Text"/> left-aligned starting at
-    /// (<see cref="TuiView.AbsCol"/>, <see cref="TuiView.AbsRow"/>), clipped to
-    /// <see cref="TuiView.Width"/>, using <see cref="ForegroundRole"/> and
-    /// <see cref="BackgroundRole"/> resolved via <see cref="TuiPalette.Resolve(TuiColorRole)"/>.
+    /// Fills the declared rectangle with the resolved background color, then draws
+    /// <see cref="Text"/> left-aligned, clipped to <see cref="TuiView.Width"/>.
+    /// Colors are resolved from <see cref="ForegroundColor"/> / <see cref="BackgroundColor"/>
+    /// when set, falling back to the default semantic roles otherwise.
     /// </remarks>
     public override void Draw(TuiRenderContext ctx)
     {
@@ -148,7 +164,15 @@ public sealed class TuiLabel : TuiView
         if (!Visible || Width <= 0 || Height <= 0)
             return;
 
-        ctx.FillRect(AbsCol, AbsRow, Width, Height, BackgroundRole);
-        ctx.DrawTextClipped(AbsCol, AbsRow, Width, Text, ForegroundRole, BackgroundRole);
+        SKColor fg = _foregroundColor.HasValue
+            ? TuiPalette.Resolve(_foregroundColor.Value)
+            : TuiPalette.Resolve(_foregroundRole);
+
+        SKColor bg = _backgroundColor.HasValue
+            ? TuiPalette.Resolve(_backgroundColor.Value)
+            : TuiPalette.Resolve(_backgroundRole);
+
+        ctx.FillRect(AbsCol, AbsRow, Width, Height, bg);
+        ctx.DrawTextClipped(AbsCol, AbsRow, Width, Text, fg, bg);
     }
 }
