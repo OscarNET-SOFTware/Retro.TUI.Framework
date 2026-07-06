@@ -352,9 +352,11 @@ public class TuiWindow : TuiGroup
         // Fill the entire title bar row first.
         ctx.FillRect(AbsCol, AbsRow, Width, 1, titleBg);
 
-        // Title text, centered over the remaining width (columns 1..Width-1).
+
+        // Title text, centered over the remaining width (columns 2..Width-2),
+        // leaving column 1 as visual separation from the system-menu glyph.
         if (Width > 1)
-            ctx.DrawTextCentered(AbsCol + 1, AbsRow, Width - 1, Title, titleFg, titleBg);
+            ctx.DrawTextCentered(AbsCol + 2, AbsRow, Width - 2, Title, titleFg, titleBg);
 
         // System-menu close glyph — uses active or inactive title roles
         // depending on whether this window is the frontmost child.

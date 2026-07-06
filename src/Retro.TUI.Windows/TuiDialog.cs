@@ -123,11 +123,12 @@ public class TuiDialog(string title, int col, int row, int width, int height)
         // Fill the entire title bar row with the dialog title background.
         ctx.FillRect(AbsCol, AbsRow, Width, 1, TuiColorRole.DialogTitleBackground);
 
-        // Title text, centered over the remaining width (columns 1..Width-1).
+        // Title text, centered over the remaining width (columns 2..Width-2),
+        // leaving column 1 as visual separation from the system-menu glyph.
         if (Width > 1)
-            ctx.DrawTextCentered(AbsCol + 1, AbsRow, Width - 1, Title,
-                                 TuiColorRole.DialogTitleForeground,
-                                 TuiColorRole.DialogTitleBackground);
+            ctx.DrawTextCentered(AbsCol + 2, AbsRow, Width - 2, Title,
+                     TuiColorRole.DialogTitleForeground,
+                     TuiColorRole.DialogTitleBackground);
 
         // System-menu close glyph — uses dialog title roles.
         ctx.DrawSystemMenuGlyph(AbsCol, AbsRow,
