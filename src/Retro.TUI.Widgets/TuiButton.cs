@@ -46,9 +46,8 @@ namespace Retro.TUI.Widgets;
 /// and foreground roles automatically.
 /// <para/>
 /// <b>Color contract:</b> follows the canonical widget color pattern: fixed default
-/// roles per type, overridable per instance via <see cref="ForegroundColor"/> and
-/// <see cref="BackgroundColor"/> (<see cref="TuiEgaColor"/>). The accelerator color
-/// is always resolved from its role and cannot be overridden independently.
+/// roles per type. The accelerator color is always resolved from its role and
+/// cannot be overridden independently.
 /// <para/>
 /// <b>Focus:</b> <see cref="TuiView.Focusable"/> is <see langword="true"/> by
 /// default. The button tracks focus state internally via
@@ -75,19 +74,10 @@ public sealed class TuiButton : TuiView
     /// </summary>
     private const char AcceleratorMarker = '~';
 
-    // ── Default color roles (fixed per type, not overridable from outside) ────
-
-    private readonly TuiColorRole _fgRole = TuiColorRole.ButtonForeground;
-    private readonly TuiColorRole _bgRole = TuiColorRole.ButtonBackground;
-    private readonly TuiColorRole _fgFocRole = TuiColorRole.ButtonFocusForeground;
-    private readonly TuiColorRole _bgFocRole = TuiColorRole.ButtonFocusBackground;
-
     // ── Backing fields ────────────────────────────────────────────────────────
 
 #pragma warning disable IDE0032
     private string _text = string.Empty;
-    private TuiEgaColor? _foregroundColor;
-    private TuiEgaColor? _backgroundColor;
     private bool _hasFocus;
 #pragma warning restore IDE0032
 
@@ -132,38 +122,6 @@ public sealed class TuiButton : TuiView
     /// <value>Defaults to <see cref="TuiCommand.Ok"/>.</value>
     public TuiCommand Command { get; init; } = TuiCommand.Ok;
 
-    /// <summary>
-    /// Gets or sets an optional EGA color that overrides the default foreground
-    /// role for this instance. <see langword="null"/> uses the default role.
-    /// </summary>
-    public TuiEgaColor? ForegroundColor
-    {
-        get => _foregroundColor;
-        set
-        {
-            if (_foregroundColor == value)
-                return;
-            _foregroundColor = value;
-            Invalidate();
-        }
-    }
-
-    /// <summary>
-    /// Gets or sets an optional EGA color that overrides the default background
-    /// role for this instance. <see langword="null"/> uses the default role.
-    /// </summary>
-    public TuiEgaColor? BackgroundColor
-    {
-        get => _backgroundColor;
-        set
-        {
-            if (_backgroundColor == value)
-                return;
-            _backgroundColor = value;
-            Invalidate();
-        }
-    }
-
     /// <inheritdoc/>
     /// <remarks>
     /// Always <see langword="true"/>: the button intercepts
@@ -206,40 +164,41 @@ public sealed class TuiButton : TuiView
 
         int drawWidth = Math.Max(Width, MinWidth);
 
-        // Resolve active colors based on focus state.
-        SKColor fg = _foregroundColor.HasValue
-            ? TuiPalette.Resolve(_foregroundColor.Value)
-            : TuiPalette.Resolve(_hasFocus ? _fgFocRole : _fgRole);
+        // Colors are fixed per the PC Tools 9.x visual reference:
+        // disabled → #696969 bg / #CACACA text; unfocused → #CACACA bg / #000000 text;
+        // focused  → #FFFFFF bg / #000000 text. No per-instance override.
+        SKColor fg, bg, accelFg;
 
-        SKColor bg = _backgroundColor.HasValue
-            ? TuiPalette.Resolve(_backgroundColor.Value)
-            : TuiPalette.Resolve(_hasFocus ? _bgFocRole : _bgRole);
-
-        SKColor accelFg = TuiPalette.Resolve(
-            _hasFocus
-                ? TuiColorRole.ButtonFocusAcceleratorForeground
-                : TuiColorRole.ButtonAcceleratorForeground);
+        if (!Enabled)
+        {
+            fg = TuiPalette.Resolve(TuiColorRole.ButtonDisabledForeground);
+            bg = TuiPalette.Resolve(TuiColorRole.ButtonDisabledBackground);
+            accelFg = TuiPalette.Resolve(TuiColorRole.ButtonDisabledAcceleratorForeground);
+        }
+        else if (_hasFocus)
+        {
+            fg = TuiPalette.Resolve(TuiColorRole.ButtonFocusForeground);
+            bg = TuiPalette.Resolve(TuiColorRole.ButtonFocusBackground);
+            accelFg = TuiPalette.Resolve(TuiColorRole.ButtonFocusAcceleratorForeground);
+        }
+        else
+        {
+            fg = TuiPalette.Resolve(TuiColorRole.ButtonForeground);
+            bg = TuiPalette.Resolve(TuiColorRole.ButtonBackground);
+            accelFg = TuiPalette.Resolve(TuiColorRole.ButtonAcceleratorForeground);
+        }
 
         // ── Background fill ───────────────────────────────────────────────────
         ctx.FillRect(AbsCol, AbsRow, drawWidth, 1, bg);
 
-        // ── Shadow (right + below, 1 cell) ────────────────────────────────────
+        // ── Shadow ────────────────────────────────────────────────────────────
         ctx.DrawShadow(AbsCol, AbsRow, drawWidth, 1);
 
-        // ── Button frame: "[ label ]" ─────────────────────────────────────────
-        // Inner label area: drawWidth - 4 chars (2 brackets + 2 spaces).
-        int innerWidth = drawWidth - 4;
-        string display = BuildDisplayText(innerWidth);
-
-        // Left bracket + space
-        ctx.DrawText(AbsCol, AbsRow, "[ ", fg, bg);
-        // Right space + bracket
-        ctx.DrawText(AbsCol + drawWidth - 2, AbsRow, " ]", fg, bg);
-
-        // ── Label with optional accelerator ───────────────────────────────────
+        // ── Label centered with 1-space padding each side (no brackets) ───────
+        string display = BuildDisplayText(drawWidth - 2);
         (string before, char? accel, string after) = ParseAccelerator(display);
 
-        int labelCol = AbsCol + 2;    // after "[ "
+        int labelCol = AbsCol + 1;
 
         ctx.DrawText(labelCol, AbsRow, before, fg, bg);
         labelCol += before.Length;
@@ -283,11 +242,16 @@ public sealed class TuiButton : TuiView
                 Invalidate();
                 return false;   // focus events are never "consumed" — propagation continues
 
-            case TuiKeyEvent { Key: TuiKey.Enter } when _hasFocus:
+            case TuiKeyEvent { Key: TuiKey.Enter } when _hasFocus && Enabled:
                 Activate();
                 return true;
 
-            case TuiMouseEvent { Action: TuiMouseAction.ButtonDown }:
+            case TuiKeyEvent keyEv when Enabled && IsAcceleratorKey(keyEv.KeyChar):
+                RequestFocus();
+                Activate();
+                return true;
+
+            case TuiMouseEvent { Action: TuiMouseAction.ButtonDown } when Enabled:
                 Activate();
                 return true;
 
@@ -299,12 +263,50 @@ public sealed class TuiButton : TuiView
     // ── Private helpers ───────────────────────────────────────────────────────
 
     /// <summary>
-    /// Emits a <see cref="TuiCommandEvent"/> carrying <see cref="Command"/> to
-    /// the parent view, starting the bubble toward the application's
-    /// <c>OnCommand</c> handler.
+    /// Emits a <see cref="TuiCommandEvent"/> carrying <see cref="Command"/> by
+    /// walking up the view tree to the nearest <see cref="TuiDesktop"/> and
+    /// invoking its <see cref="TuiDesktop.CommandSink"/> directly.
+    /// This avoids re-dispatching through <see cref="TuiGroup.HandleEvent"/>
+    /// (which would cause infinite recursion) while still reaching
+    /// <c>TuiApplication.OnCommand</c> cleanly.
     /// </summary>
     private void Activate()
-        => Parent?.HandleEvent(new TuiCommandEvent(Command));
+    {
+        var cmd = new TuiCommandEvent(Command);
+
+        TuiView? node = Parent;
+        while (node is not null)
+        {
+            if (node is TuiDesktop desktop)
+            {
+                desktop.CommandSink?.Invoke(cmd);
+                return;
+            }
+            node = node.Parent;
+        }
+    }
+
+    /// <summary>
+    /// Requests keyboard focus by walking up the view tree to the nearest
+    /// <see cref="TuiDesktop"/> and invoking its <see cref="TuiDesktop.FocusSink"/>.
+    /// Called before <see cref="Activate"/> when the button is triggered via its
+    /// accelerator key, so the visual focus state updates before the command fires —
+    /// matching the behaviour of a mouse click, where <c>TuiMessageLoop</c> calls
+    /// <c>TuiFocusManager.TrySetFocus</c> on <c>ButtonDown</c>.
+    /// </summary>
+    private void RequestFocus()
+    {
+        TuiView? node = Parent;
+        while (node is not null)
+        {
+            if (node is TuiDesktop desktop)
+            {
+                desktop.FocusSink?.Invoke(this);
+                return;
+            }
+            node = node.Parent;
+        }
+    }
 
     /// <summary>
     /// Builds the centered display string for the inner label area, stripping
@@ -355,5 +357,21 @@ public sealed class TuiButton : TuiView
             displayText[accelPos],
             accelPos + 1 < displayText.Length ? displayText[(accelPos + 1)..] : string.Empty
         );
+    }
+
+    /// <summary>
+    /// Returns <see langword="true"/> when <paramref name="ch"/> matches the
+    /// accelerator character embedded in <see cref="Text"/> (case-insensitive).
+    /// </summary>
+    private bool IsAcceleratorKey(char ch)
+    {
+        if (ch == '\0')
+            return false;
+
+        int idx = _text.IndexOf(AcceleratorMarker, StringComparison.Ordinal);
+        if (idx < 0 || idx + 1 >= _text.Length)
+            return false;
+
+        return char.ToUpperInvariant(_text[idx + 1]) == char.ToUpperInvariant(ch);
     }
 }

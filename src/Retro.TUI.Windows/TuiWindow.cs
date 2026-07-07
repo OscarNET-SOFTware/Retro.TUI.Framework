@@ -283,7 +283,11 @@ public class TuiWindow : TuiGroup
             return true;
         }
 
-        return base.HandleEvent(ev);
+        // Mouse events not handled at window level (window background clicks,
+        // unrecognised actions) return false. Children receive mouse events
+        // exclusively through DispatchMouseEvent → FindAt, not via TuiGroup
+        // child dispatch, which has no hit-testing and would fire all buttons.
+        return false;
     }
 
     // ── Rendering ─────────────────────────────────────────────────────────────

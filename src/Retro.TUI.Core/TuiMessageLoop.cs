@@ -311,6 +311,8 @@ internal sealed class TuiMessageLoop
     /// <list type="bullet">
     ///   <item><description>Tab → <see cref="TuiFocusManager.FocusNext"/></description></item>
     ///   <item><description>Shift+Tab → <see cref="TuiFocusManager.FocusPrevious"/></description></item>
+    ///   <item><description>Left / Up → <see cref="TuiFocusManager.FocusPrevious"/></description></item>
+    ///   <item><description>Right / Down → <see cref="TuiFocusManager.FocusNext"/></description></item>
     ///   <item><description>
     ///     Escape → <see cref="TuiCommand.Cancel"/> to the active modal when
     ///     <see cref="TuiDesktop.HasModal"/>; otherwise posted via
@@ -335,7 +337,20 @@ internal sealed class TuiMessageLoop
                 focusManager.FocusPrevious();
             else
                 focusManager.FocusNext();
+            return;
+        }
 
+        // Arrow keys navigate focus in PC Tools 9.x style:
+        // Left/Up → previous focusable view; Right/Down → next focusable view.
+        if (keyEvent.Key is TuiKey.Left or TuiKey.Up)
+        {
+            focusManager.FocusPrevious();
+            return;
+        }
+
+        if (keyEvent.Key is TuiKey.Right or TuiKey.Down)
+        {
+            focusManager.FocusNext();
             return;
         }
 
@@ -363,7 +378,9 @@ internal sealed class TuiMessageLoop
             return;
         }
 
-        focusManager.Current?.HandleEvent(keyEvent);
+        bool consumed = focusManager.Current?.HandleEvent(keyEvent) ?? false;
+        if (!consumed)
+            desktop.HandleEvent(keyEvent);
     }
 
     /// <summary>

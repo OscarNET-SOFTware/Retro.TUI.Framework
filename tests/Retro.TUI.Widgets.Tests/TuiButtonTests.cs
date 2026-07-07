@@ -15,7 +15,6 @@
 
 using Retro.TUI.Events;
 using Retro.TUI.Rendering;
-using Retro.TUI.Theming;
 using Retro.TUI.Views;
 
 using SkiaSharp;
@@ -56,14 +55,6 @@ public sealed class TuiButtonTests
     {
         var btn = new TuiButton();
         Assert.True(btn.HasCustomMouseHandling);
-    }
-
-    [Fact]
-    public void Constructor_DefaultColors_AreNull()
-    {
-        var btn = new TuiButton();
-        Assert.Null(btn.ForegroundColor);
-        Assert.Null(btn.BackgroundColor);
     }
 
     [Fact]
@@ -115,186 +106,6 @@ public sealed class TuiButtonTests
         Assert.False(btn.IsDirty);
 
         btn.Text = "~O~K";
-
-        Assert.False(btn.IsDirty);
-    }
-
-    // ── ForegroundColor property ──────────────────────────────────────────────
-
-    [Fact]
-    public void ForegroundColor_SetValue_WhenWasNull_Invalidates()
-    {
-        TuiRenderContext ctx = BuildContext(40, 20);
-        using SKSurface surface = CreateSurface(40 * 9, 20 * 16);
-
-        var group = new TuiGroup();
-        var btn = new TuiButton { Col = 0, Row = 0, Width = 10, Height = 1 };
-        group.Add(btn);
-
-        ctx.RenderFrame(surface, c => group.Draw(c));
-        Assert.False(btn.IsDirty);
-
-        btn.ForegroundColor = TuiEgaColor.BrightCyan;
-
-        Assert.Equal(TuiEgaColor.BrightCyan, btn.ForegroundColor);
-        Assert.True(btn.IsDirty);
-    }
-
-    [Fact]
-    public void ForegroundColor_SetNull_WhenHadValue_Invalidates()
-    {
-        TuiRenderContext ctx = BuildContext(40, 20);
-        using SKSurface surface = CreateSurface(40 * 9, 20 * 16);
-
-        var group = new TuiGroup();
-        var btn = new TuiButton
-        {
-            Col = 0,
-            Row = 0,
-            Width = 10,
-            Height = 1,
-            ForegroundColor = TuiEgaColor.BrightCyan
-        };
-        group.Add(btn);
-
-        ctx.RenderFrame(surface, c => group.Draw(c));
-        Assert.False(btn.IsDirty);
-
-        btn.ForegroundColor = null;
-
-        Assert.Null(btn.ForegroundColor);
-        Assert.True(btn.IsDirty);
-    }
-
-    [Fact]
-    public void ForegroundColor_SetSameValue_DoesNotInvalidate()
-    {
-        TuiRenderContext ctx = BuildContext(40, 20);
-        using SKSurface surface = CreateSurface(40 * 9, 20 * 16);
-
-        var group = new TuiGroup();
-        var btn = new TuiButton
-        {
-            Col = 0,
-            Row = 0,
-            Width = 10,
-            Height = 1,
-            ForegroundColor = TuiEgaColor.BrightCyan
-        };
-        group.Add(btn);
-
-        ctx.RenderFrame(surface, c => group.Draw(c));
-        Assert.False(btn.IsDirty);
-
-        btn.ForegroundColor = TuiEgaColor.BrightCyan;
-
-        Assert.False(btn.IsDirty);
-    }
-
-    [Fact]
-    public void ForegroundColor_SetNull_WhenAlreadyNull_DoesNotInvalidate()
-    {
-        TuiRenderContext ctx = BuildContext(40, 20);
-        using SKSurface surface = CreateSurface(40 * 9, 20 * 16);
-
-        var group = new TuiGroup();
-        var btn = new TuiButton { Col = 0, Row = 0, Width = 10, Height = 1 };
-        group.Add(btn);
-
-        ctx.RenderFrame(surface, c => group.Draw(c));
-        Assert.False(btn.IsDirty);
-
-        btn.ForegroundColor = null;
-
-        Assert.False(btn.IsDirty);
-    }
-
-    // ── BackgroundColor property ──────────────────────────────────────────────
-
-    [Fact]
-    public void BackgroundColor_SetValue_WhenWasNull_Invalidates()
-    {
-        TuiRenderContext ctx = BuildContext(40, 20);
-        using SKSurface surface = CreateSurface(40 * 9, 20 * 16);
-
-        var group = new TuiGroup();
-        var btn = new TuiButton { Col = 0, Row = 0, Width = 10, Height = 1 };
-        group.Add(btn);
-
-        ctx.RenderFrame(surface, c => group.Draw(c));
-        Assert.False(btn.IsDirty);
-
-        btn.BackgroundColor = TuiEgaColor.Blue;
-
-        Assert.Equal(TuiEgaColor.Blue, btn.BackgroundColor);
-        Assert.True(btn.IsDirty);
-    }
-
-    [Fact]
-    public void BackgroundColor_SetNull_WhenHadValue_Invalidates()
-    {
-        TuiRenderContext ctx = BuildContext(40, 20);
-        using SKSurface surface = CreateSurface(40 * 9, 20 * 16);
-
-        var group = new TuiGroup();
-        var btn = new TuiButton
-        {
-            Col = 0,
-            Row = 0,
-            Width = 10,
-            Height = 1,
-            BackgroundColor = TuiEgaColor.Blue
-        };
-        group.Add(btn);
-
-        ctx.RenderFrame(surface, c => group.Draw(c));
-        Assert.False(btn.IsDirty);
-
-        btn.BackgroundColor = null;
-
-        Assert.Null(btn.BackgroundColor);
-        Assert.True(btn.IsDirty);
-    }
-
-    [Fact]
-    public void BackgroundColor_SetSameValue_DoesNotInvalidate()
-    {
-        TuiRenderContext ctx = BuildContext(40, 20);
-        using SKSurface surface = CreateSurface(40 * 9, 20 * 16);
-
-        var group = new TuiGroup();
-        var btn = new TuiButton
-        {
-            Col = 0,
-            Row = 0,
-            Width = 10,
-            Height = 1,
-            BackgroundColor = TuiEgaColor.Blue
-        };
-        group.Add(btn);
-
-        ctx.RenderFrame(surface, c => group.Draw(c));
-        Assert.False(btn.IsDirty);
-
-        btn.BackgroundColor = TuiEgaColor.Blue;
-
-        Assert.False(btn.IsDirty);
-    }
-
-    [Fact]
-    public void BackgroundColor_SetNull_WhenAlreadyNull_DoesNotInvalidate()
-    {
-        TuiRenderContext ctx = BuildContext(40, 20);
-        using SKSurface surface = CreateSurface(40 * 9, 20 * 16);
-
-        var group = new TuiGroup();
-        var btn = new TuiButton { Col = 0, Row = 0, Width = 10, Height = 1 };
-        group.Add(btn);
-
-        ctx.RenderFrame(surface, c => group.Draw(c));
-        Assert.False(btn.IsDirty);
-
-        btn.BackgroundColor = null;
 
         Assert.False(btn.IsDirty);
     }
@@ -371,14 +182,15 @@ public sealed class TuiButtonTests
             Text = "~O~K",
             Command = TuiCommand.Ok,
             Col = 0,
-            Row = 0,
+            Row = 2,
             Width = 10,
             Height = 1,
         };
 
-        // Use a recording group as parent to capture the emitted command.
-        var parent = new RecordingGroup();
-        parent.Add(btn);
+        var desktop = new TuiDesktop();
+        var received = new List<TuiCommandEvent>();
+        desktop.CommandSink = received.Add;
+        desktop.Add(btn);
 
         btn.HandleEvent(new TuiFocusEvent(TuiFocusAction.Gained));
 
@@ -386,9 +198,8 @@ public sealed class TuiButtonTests
             new TuiKeyEvent(TuiKey.Enter, '\0', TuiModifiers.None));
 
         Assert.True(consumed);
-        Assert.Single(parent.ReceivedEvents);
-        TuiCommandEvent cmd = Assert.IsType<TuiCommandEvent>(parent.ReceivedEvents[0]);
-        Assert.Equal(TuiCommand.Ok, cmd.Command);
+        Assert.Single(received);
+        Assert.Equal(TuiCommand.Ok, received[0].Command);
     }
 
     [Fact]
@@ -425,21 +236,22 @@ public sealed class TuiButtonTests
             Text = "~O~K",
             Command = TuiCommand.Ok,
             Col = 0,
-            Row = 0,
+            Row = 2,
             Width = 10,
             Height = 1,
         };
 
-        var parent = new RecordingGroup();
-        parent.Add(btn);
+        var desktop = new TuiDesktop();
+        var received = new List<TuiCommandEvent>();
+        desktop.CommandSink = received.Add;
+        desktop.Add(btn);
 
         bool consumed = btn.HandleEvent(
             new TuiMouseEvent(TuiMouseAction.ButtonDown, 0, 0, 0f, 0f));
 
         Assert.True(consumed);
-        Assert.Single(parent.ReceivedEvents);
-        TuiCommandEvent cmd = Assert.IsType<TuiCommandEvent>(parent.ReceivedEvents[0]);
-        Assert.Equal(TuiCommand.Ok, cmd.Command);
+        Assert.Single(received);
+        Assert.Equal(TuiCommand.Ok, received[0].Command);
     }
 
     [Fact]
@@ -580,27 +392,6 @@ public sealed class TuiButtonTests
     }
 
     [Fact]
-    public void Draw_WithColorOverrides_DoesNotThrow()
-    {
-        TuiRenderContext ctx = BuildContext(40, 20);
-        using SKSurface surface = CreateSurface(40 * 9, 20 * 16);
-
-        var btn = new TuiButton
-        {
-            Text = "~O~K",
-            Col = 2,
-            Row = 2,
-            Width = 10,
-            Height = 1,
-            ForegroundColor = TuiEgaColor.Yellow,
-            BackgroundColor = TuiEgaColor.Blue,
-        };
-
-        var ex = Record.Exception(() => ctx.RenderFrame(surface, c => btn.Draw(c)));
-        Assert.Null(ex);
-    }
-
-    [Fact]
     public void Draw_Invisible_DoesNotThrow()
     {
         TuiRenderContext ctx = BuildContext(40, 20);
@@ -655,5 +446,74 @@ public sealed class TuiButtonTests
         font.Load(SKTypeface.Default, 16f);
 
         return new TuiRenderContext(grid, font);
+    }
+
+    // ── Disabled state ────────────────────────────────────────────────────────
+
+    [Fact]
+    public void HandleEvent_EnterWhenDisabled_DoesNotEmitCommand()
+    {
+        var btn = new TuiButton
+        {
+            Text = "~O~K",
+            Command = TuiCommand.Ok,
+            Col = 0,
+            Row = 2,
+            Width = 10,
+            Height = 1,
+            Enabled = false,
+        };
+        var parent = new RecordingGroup();
+        parent.Add(btn);
+        btn.HandleEvent(new TuiFocusEvent(TuiFocusAction.Gained));
+
+        bool consumed = btn.HandleEvent(
+            new TuiKeyEvent(TuiKey.Enter, '\0', TuiModifiers.None));
+
+        Assert.False(consumed);
+        Assert.Empty(parent.ReceivedEvents);
+    }
+
+    [Fact]
+    public void HandleEvent_MouseButtonDownWhenDisabled_DoesNotEmitCommand()
+    {
+        var btn = new TuiButton
+        {
+            Text = "~O~K",
+            Command = TuiCommand.Ok,
+            Col = 0,
+            Row = 2,
+            Width = 10,
+            Height = 1,
+            Enabled = false,
+        };
+        var parent = new RecordingGroup();
+        parent.Add(btn);
+
+        bool consumed = btn.HandleEvent(
+            new TuiMouseEvent(TuiMouseAction.ButtonDown, 0, 0, 0f, 0f));
+
+        Assert.False(consumed);
+        Assert.Empty(parent.ReceivedEvents);
+    }
+
+    [Fact]
+    public void Draw_DisabledButton_DoesNotThrow()
+    {
+        TuiRenderContext ctx = BuildContext(40, 20);
+        using SKSurface surface = CreateSurface(40 * 9, 20 * 16);
+
+        var btn = new TuiButton
+        {
+            Text = "~O~K",
+            Col = 2,
+            Row = 2,
+            Width = 10,
+            Height = 1,
+            Enabled = false,
+        };
+
+        var ex = Record.Exception(() => ctx.RenderFrame(surface, c => btn.Draw(c)));
+        Assert.Null(ex);
     }
 }

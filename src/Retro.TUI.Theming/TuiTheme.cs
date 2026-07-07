@@ -75,13 +75,13 @@ public static class TuiTheme
     /// <value><c>0.65f</c> — range [0.0, 1.0].</value>
     public static float ShadowOpacity { get; } = 0.65f;
 
-    /// <summary>Horizontal offset in pixels of drop shadows.</summary>
-    /// <value><c>8</c> px.</value>
-    public static int ShadowOffsetX { get; } = 8;
+    /// <summary>Horizontal offset in cells of drop shadows.</summary>
+    /// <value><c>1</c> cell = 9 px.</value>
+    public static int ShadowOffsetX { get; } = 1;
 
-    /// <summary>Vertical offset in pixels of drop shadows.</summary>
-    /// <value><c>7</c> px.</value>
-    public static int ShadowOffsetY { get; } = 7;
+    /// <summary>Vertical offset in cells of drop shadows.</summary>
+    /// <value><c>1</c> cell = 16 px.</value>
+    public static int ShadowOffsetY { get; } = 1;
 
     /// <summary>
     /// Initializes static members — loads the IBM VGA 9x16 typeface from

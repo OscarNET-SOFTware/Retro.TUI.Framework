@@ -177,44 +177,63 @@ public sealed class TuiFocusManager
         return true;
     }
 
-    /// <summary>
-    /// Moves focus to the next view in tab order, wrapping around to the first
-    /// if the currently focused view is the last one.
-    /// </summary>
+    /// <inheritdoc cref="FocusNext"/>
     /// <remarks>
-    /// If no view is registered, this method is a no-op.
-    /// If no view currently has focus, the first registered view receives it.
+    /// Disabled views are skipped: the next enabled view in tab order receives
+    /// focus. If all registered views are disabled, focus is not changed.
     /// </remarks>
     public void FocusNext()
     {
         if (_tabOrder.Count == 0)
             return;
 
-        int next = _current is null
+        int start = _current is null
             ? 0
             : (_tabOrder.IndexOf(_current) + 1) % _tabOrder.Count;
 
-        SetCurrentInternal(_tabOrder[next]);
+        int next = FindEnabledFrom(start, forward: true);
+        if (next >= 0)
+            SetCurrentInternal(_tabOrder[next]);
     }
 
-    /// <summary>
-    /// Moves focus to the previous view in tab order, wrapping around to the last
-    /// if the currently focused view is the first one.
-    /// </summary>
+    /// <inheritdoc cref="FocusPrevious"/>
     /// <remarks>
-    /// If no view is registered, this method is a no-op.
-    /// If no view currently has focus, the last registered view receives it.
+    /// Disabled views are skipped: the previous enabled view in tab order
+    /// receives focus. If all registered views are disabled, focus is not
+    /// changed.
     /// </remarks>
     public void FocusPrevious()
     {
         if (_tabOrder.Count == 0)
             return;
 
-        int prev = _current is null
+        int start = _current is null
             ? _tabOrder.Count - 1
             : (_tabOrder.IndexOf(_current) - 1 + _tabOrder.Count) % _tabOrder.Count;
 
-        SetCurrentInternal(_tabOrder[prev]);
+        int prev = FindEnabledFrom(start, forward: false);
+        if (prev >= 0)
+            SetCurrentInternal(_tabOrder[prev]);
+    }
+
+    /// <summary>
+    /// Searches the tab order starting at <paramref name="start"/>, wrapping
+    /// around, and returns the index of the first enabled view found.
+    /// Returns <c>-1</c> if all registered views are disabled.
+    /// </summary>
+    private int FindEnabledFrom(int start, bool forward)
+    {
+        int count = _tabOrder.Count;
+        for (int i = 0; i < count; i++)
+        {
+            int idx = forward
+                ? (start + i) % count
+                : (start - i + count) % count;
+
+            if (_tabOrder[idx].Enabled)
+                return idx;
+        }
+        return -1;
     }
 
     /// <summary>

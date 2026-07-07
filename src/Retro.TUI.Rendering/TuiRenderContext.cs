@@ -457,8 +457,8 @@ public sealed class TuiRenderContext : IDisposable
         float ph = height * Grid.CellHeight;
 
         // Shadow offsets are in pixels (not grid cells).
-        float ox = TuiTheme.ShadowOffsetX;
-        float oy = TuiTheme.ShadowOffsetY;
+        float ox = TuiTheme.ShadowOffsetX * Grid.CellWidth;
+        float oy = TuiTheme.ShadowOffsetY * ((Grid.CellHeight / 2) - 1);
 
         _fillPaint.Color = shadowColor;
 

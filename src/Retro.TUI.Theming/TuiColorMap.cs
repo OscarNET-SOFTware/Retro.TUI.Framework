@@ -122,13 +122,16 @@ internal static class TuiColorMap
         [TuiColorRole.InputBorderBottom] = TuiEgaPalette.EgaBlack,
 
         // ── Button ────────────────────────────────────────────────────────────
-        [TuiColorRole.ButtonBackground] = TuiEgaPalette.EgaWhite,
+        [TuiColorRole.ButtonBackground] = s_lightGray,
         [TuiColorRole.ButtonForeground] = TuiEgaPalette.EgaBlack,
         [TuiColorRole.ButtonAcceleratorForeground] = TuiEgaPalette.EgaRed,
         [TuiColorRole.ButtonFocusBackground] = TuiEgaPalette.EgaWhite,
         [TuiColorRole.ButtonFocusForeground] = TuiEgaPalette.EgaBlack,
         [TuiColorRole.ButtonFocusAcceleratorForeground] = TuiEgaPalette.EgaRed,
         [TuiColorRole.ButtonShadow] = TuiEgaPalette.EgaBlack,
+        [TuiColorRole.ButtonDisabledBackground] = s_gray,
+        [TuiColorRole.ButtonDisabledForeground] = s_lightGray,
+        [TuiColorRole.ButtonDisabledAcceleratorForeground] = s_lightGray,
 
         // ── CheckBox / RadioButton ────────────────────────────────────────────
         [TuiColorRole.CheckBackground] = TuiEgaPalette.EgaBrightBlue,

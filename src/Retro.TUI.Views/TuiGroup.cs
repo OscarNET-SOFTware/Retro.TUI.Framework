@@ -228,19 +228,14 @@ public class TuiGroup : TuiView
 
     // ── Event handling ────────────────────────────────────────────────────────
 
-    /// <summary>
-    /// Dispatches the event to visible, enabled children in reverse z-order
-    /// (frontmost child first) until one consumes it.
-    /// </summary>
-    /// <param name="ev">The event to dispatch.</param>
-    /// <returns>
-    /// <see langword="true"/> if a child consumed the event;
-    /// <see langword="false"/> if no child handled it.
-    /// </returns>
+    /// <inheritdoc/>
     /// <remarks>
-    /// The group itself does not consume any events — it only acts as a
-    /// dispatcher. Subclasses may override this method to intercept events
-    /// before or after child dispatch.
+    /// Dispatches the event to children in reverse z-order (front-to-back).
+    /// If no child consumes a <see cref="TuiCommandEvent"/>, it is forwarded
+    /// to <see cref="TuiView.Parent"/> so commands emitted from deep in the
+    /// tree (e.g. a <c>TuiButton</c> inside a <c>TuiWindow</c>) bubble up to
+    /// <see cref="TuiDesktop.CommandSink"/> and reach
+    /// <c>TuiApplication.OnCommand</c>.
     /// </remarks>
     public override bool HandleEvent(TuiEvent ev)
     {

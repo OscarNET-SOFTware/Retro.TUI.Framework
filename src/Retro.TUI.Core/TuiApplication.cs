@@ -175,6 +175,7 @@ public abstract class TuiApplication : IDisposable
         // level commands (Close, custom commands) emitted from inside the tree.
         // Assigned before OnInitialize so views added there can already emit commands.
         Desktop.CommandSink = OnCommand;
+        Desktop.FocusSink = view => FocusManager.TrySetFocus(view);
 
         // ── 5. Let the subclass populate the view tree ────────────────────────
         OnInitialize();
