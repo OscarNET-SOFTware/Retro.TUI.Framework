@@ -260,4 +260,34 @@ public class TuiGroup : TuiView
 
         return false;
     }
+
+    /// <summary>
+    /// Recursively collects all focusable descendants of this group into
+    /// <paramref name="result"/>, in depth-first, paint order.
+    /// </summary>
+    /// <param name="result">
+    /// The collection that receives each focusable <see cref="TuiView"/> found.
+    /// Must not be <see langword="null"/>.
+    /// </param>
+    /// <remarks>
+    /// Used by <c>TuiApplication</c> (Core layer) to auto-register focusable
+    /// views with <c>TuiFocusManager</c> after <c>OnInitialize</c> and before
+    /// each modal loop, without exposing <see cref="TuiView.Children"/> publicly.
+    /// Only views with <see cref="TuiView.Focusable"/> set to
+    /// <see langword="true"/> are included; non-focusable groups are still
+    /// traversed so their focusable descendants are found.
+    /// </remarks>
+    internal void CollectFocusable(ICollection<TuiView> result)
+    {
+        ArgumentNullException.ThrowIfNull(result);
+
+        foreach (TuiView child in Children)
+        {
+            if (child.Focusable)
+                result.Add(child);
+
+            if (child is TuiGroup subGroup)
+                subGroup.CollectFocusable(result);
+        }
+    }
 }

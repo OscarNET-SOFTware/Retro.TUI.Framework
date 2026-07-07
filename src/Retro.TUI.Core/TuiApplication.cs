@@ -178,6 +178,7 @@ public abstract class TuiApplication : IDisposable
 
         // ── 5. Let the subclass populate the view tree ────────────────────────
         OnInitialize();
+        RegisterFocusableDescendants(Desktop);
 
         // ── 6. Run the message loop ───────────────────────────────────────────
         using var queue = new TuiEventQueue();
@@ -263,6 +264,8 @@ public abstract class TuiApplication : IDisposable
                 "RunModal may only be called after Run() has initialized the application.");
 
         desktop.PushModal(dialogView);
+        if (dialogView is TuiGroup dialogGroup)
+            RegisterFocusableDescendants(dialogGroup);
         _loop.BeginModal();
         try
         {
@@ -336,6 +339,23 @@ public abstract class TuiApplication : IDisposable
 
         if (ev.Command == TuiCommand.Quit)
             RequestQuit();
+    }
+
+    /// <summary>
+    /// Walks <paramref name="group"/> recursively and registers every focusable
+    /// descendant with <see cref="FocusManager"/> that is not already registered.
+    /// </summary>
+    /// <param name="group">The root group to scan.</param>
+    private void RegisterFocusableDescendants(TuiGroup group)
+    {
+        var focusable = new List<TuiView>();
+        group.CollectFocusable(focusable);
+
+        foreach (TuiView view in focusable)
+        {
+            if (!FocusManager.IsRegistered(view))
+                FocusManager.Register(view);
+        }
     }
 
     /// <summary>

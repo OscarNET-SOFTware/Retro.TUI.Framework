@@ -227,6 +227,23 @@ public sealed class TuiFocusManager
     public bool IsFocused(TuiView view) => ReferenceEquals(_current, view);
 
     /// <summary>
+    /// Returns whether <paramref name="view"/> is registered with this manager.
+    /// </summary>
+    /// <param name="view">The view to test. Must not be <see langword="null"/>.</param>
+    /// <returns>
+    /// <see langword="true"/> if <paramref name="view"/> has been added via
+    /// <see cref="Register"/> and not yet removed via <see cref="Unregister"/>.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="view"/> is <see langword="null"/>.
+    /// </exception>
+    public bool IsRegistered(TuiView view)
+    {
+        ArgumentNullException.ThrowIfNull(view);
+        return _tabOrder.Contains(view);
+    }
+
+    /// <summary>
     /// Clears all focus state, leaving no view focused.
     /// </summary>
     /// <remarks>
