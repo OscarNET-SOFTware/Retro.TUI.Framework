@@ -127,6 +127,27 @@ internal sealed class TuiMessageLoop
     /// </summary>
     private bool _modalWasOpened;
 
+    /// <summary>
+    /// The <see cref="TuiFocusManager"/> currently wired to this loop's
+    /// <see cref="OnFocusManagerChanged"/> handler, or <see langword="null"/>
+    /// if no manager has been seen yet.
+    /// </summary>
+    /// <remarks>
+    /// Used by <see cref="EnsureFocusEventWiring"/> to subscribe exactly once
+    /// per <see cref="TuiFocusManager"/> instance, even across repeated
+    /// <see cref="RunIteration"/> calls.
+    /// </remarks>
+    private TuiFocusManager? _wiredFocusManager;
+
+    /// <summary>
+    /// The view that last received <see cref="TuiFocusAction.Gained"/>, used to
+    /// compute which view receives <see cref="TuiFocusAction.Lost"/> on the next
+    /// focus change. Mirrors <see cref="TuiFocusManager.Current"/> but is cached
+    /// locally because <see cref="TuiFocusManager.FocusChanged"/> fires after the
+    /// manager's internal state has already moved to the new value.
+    /// </summary>
+    private TuiView? _lastFocusedView;
+
     // ── Internal state accessors (for testing) ────────────────────────────────
 
     /// <summary>
@@ -242,6 +263,8 @@ internal sealed class TuiMessageLoop
         TuiGrid grid,
         Action<TuiCommandEvent>? onCommand = null)
     {
+        EnsureFocusEventWiring(focusManager);
+
         while (queue.TryRead(out TuiEvent? ev))
         {
             if (ev is null)
@@ -288,6 +311,8 @@ internal sealed class TuiMessageLoop
     /// <list type="bullet">
     ///   <item><description>Tab → <see cref="TuiFocusManager.FocusNext"/></description></item>
     ///   <item><description>Shift+Tab → <see cref="TuiFocusManager.FocusPrevious"/></description></item>
+    ///   <item><description>Left / Up → <see cref="TuiFocusManager.FocusPrevious"/></description></item>
+    ///   <item><description>Right / Down → <see cref="TuiFocusManager.FocusNext"/></description></item>
     ///   <item><description>
     ///     Escape → <see cref="TuiCommand.Cancel"/> to the active modal when
     ///     <see cref="TuiDesktop.HasModal"/>; otherwise posted via
@@ -312,7 +337,20 @@ internal sealed class TuiMessageLoop
                 focusManager.FocusPrevious();
             else
                 focusManager.FocusNext();
+            return;
+        }
 
+        // Arrow keys navigate focus in PC Tools 9.x style:
+        // Left/Up → previous focusable view; Right/Down → next focusable view.
+        if (keyEvent.Key is TuiKey.Left or TuiKey.Up)
+        {
+            focusManager.FocusPrevious();
+            return;
+        }
+
+        if (keyEvent.Key is TuiKey.Right or TuiKey.Down)
+        {
+            focusManager.FocusNext();
             return;
         }
 
@@ -340,7 +378,9 @@ internal sealed class TuiMessageLoop
             return;
         }
 
-        focusManager.Current?.HandleEvent(keyEvent);
+        bool consumed = focusManager.Current?.HandleEvent(keyEvent) ?? false;
+        if (!consumed)
+            desktop.HandleEvent(keyEvent);
     }
 
     /// <summary>
@@ -440,6 +480,18 @@ internal sealed class TuiMessageLoop
                 continue;
             }
 
+            // Auto-focus on click: transfer focus to the hit view before delivering
+            // the event when it is focusable and a focus manager is wired.
+            // This mirrors Turbo Vision's TGroup selecting the clicked subview —
+            // here the responsibility lives in the message loop (Core) so that
+            // widgets (Widgets layer) never need to reference TuiFocusManager directly.
+            if (resolvedEvent.Action == TuiMouseAction.ButtonDown
+                && current.Focusable
+                && _wiredFocusManager is not null)
+            {
+                _wiredFocusManager.TrySetFocus(current);
+            }
+
             if (current.HandleEvent(resolvedEvent))
             {
                 // On ButtonDown, establish capture on the first ancestor with
@@ -523,5 +575,59 @@ internal sealed class TuiMessageLoop
 
         host.Present();
         return true;
+    }
+
+    /// <summary>
+    /// Subscribes to <paramref name="focusManager"/>'s <see cref="TuiFocusManager.FocusChanged"/>
+    /// event exactly once, translating each change into <see cref="TuiFocusEvent"/>
+    /// instances delivered to the affected views via <see cref="TuiView.HandleEvent"/>.
+    /// Visible for testing via <c>InternalsVisibleTo</c>.
+    /// </summary>
+    /// <param name="focusManager">The focus manager driving the current session.</param>
+    /// <remarks>
+    /// Idempotent per manager instance: re-entering with the same
+    /// <paramref name="focusManager"/> is a no-op. If a different manager was
+    /// previously wired, the old subscription is removed first — defensive
+    /// robustness only; not exercised by a dedicated test today because each
+    /// <c>TuiApplication.Run</c> session creates a fresh <see cref="TuiMessageLoop"/>
+    /// (see <c>TuiApplication.Run</c>, step 6), so no <see cref="TuiMessageLoop"/>
+    /// instance is ever rewired to a second <see cref="TuiFocusManager"/> in
+    /// practice. Add a test here if that lifecycle ever changes.
+    /// </remarks>
+    internal void EnsureFocusEventWiring(TuiFocusManager focusManager)
+    {
+        if (ReferenceEquals(_wiredFocusManager, focusManager))
+            return;
+
+        _wiredFocusManager?.FocusChanged -= OnFocusManagerChanged;
+
+        focusManager.FocusChanged += OnFocusManagerChanged;
+        _wiredFocusManager = focusManager;
+        _lastFocusedView = focusManager.Current;
+    }
+
+    /// <summary>
+    /// Translates a <see cref="TuiFocusManager.FocusChanged"/> notification into
+    /// <see cref="TuiFocusEvent"/> deliveries: <see cref="TuiFocusAction.Lost"/> to
+    /// the previously focused view (if any), then <see cref="TuiFocusAction.Gained"/>
+    /// to the newly focused view (if any).
+    /// </summary>
+    /// <remarks>
+    /// Lost is always dispatched before Gained, matching Turbo Vision's
+    /// focus-transition ordering. When focus is cleared via
+    /// <see cref="TuiFocusManager.Clear"/>, only Lost is dispatched.
+    /// </remarks>
+    private void OnFocusManagerChanged(object? sender, TuiFocusChangedEventArgs e)
+    {
+        TuiView? previous = _lastFocusedView;
+        TuiView? next = e.FocusedView;
+
+        if (ReferenceEquals(previous, next))
+            return;
+
+        previous?.HandleEvent(new TuiFocusEvent(TuiFocusAction.Lost));
+        next?.HandleEvent(new TuiFocusEvent(TuiFocusAction.Gained));
+
+        _lastFocusedView = next;
     }
 }

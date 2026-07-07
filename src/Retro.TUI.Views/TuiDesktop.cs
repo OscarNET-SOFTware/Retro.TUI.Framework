@@ -78,6 +78,20 @@ public sealed class TuiDesktop : TuiGroup
     public Action<TuiCommandEvent>? CommandSink { get; set; }
 
     /// <summary>
+    /// Optional callback invoked when a focusable view requests keyboard focus
+    /// programmatically — for example, a <c>TuiButton</c> activated via its
+    /// accelerator key transfers focus to itself before emitting its command.
+    /// </summary>
+    /// <remarks>
+    /// Set by <c>TuiApplication</c> to <c>FocusManager.TrySetFocus</c> at
+    /// startup, mirroring the <see cref="CommandSink"/> pattern. Views in the
+    /// <c>Retro.TUI.Widgets</c> layer call this indirectly by walking up to the
+    /// nearest <see cref="TuiDesktop"/> and invoking <see cref="FocusSink"/>,
+    /// without referencing <c>TuiFocusManager</c> directly (Core-layer isolation).
+    /// </remarks>
+    public Action<TuiView>? FocusSink { get; set; }
+
+    /// <summary>
     /// Pushes <paramref name="modal"/> onto the modal stack and adds it as a child
     /// of this desktop so it participates in rendering.
     /// </summary>

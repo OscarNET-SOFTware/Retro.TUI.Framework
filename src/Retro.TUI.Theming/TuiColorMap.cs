@@ -23,7 +23,7 @@ namespace Retro.TUI.Theming;
 /// </summary>
 /// <remarks>
 /// This class is the single source of truth for the framework's fixed color scheme.
-/// All rendering code resolves colors through <see cref="TuiPalette.Resolve"/>,
+/// All rendering code resolves colors through <see cref="TuiPalette.Resolve(TuiColorRole)"/>,
 /// which delegates to <see cref="Resolve"/> here.
 /// <para/>
 /// Two non-EGA grays are used internally for roles that require intermediate
@@ -122,13 +122,16 @@ internal static class TuiColorMap
         [TuiColorRole.InputBorderBottom] = TuiEgaPalette.EgaBlack,
 
         // ── Button ────────────────────────────────────────────────────────────
-        [TuiColorRole.ButtonBackground] = TuiEgaPalette.EgaWhite,
+        [TuiColorRole.ButtonBackground] = s_lightGray,
         [TuiColorRole.ButtonForeground] = TuiEgaPalette.EgaBlack,
         [TuiColorRole.ButtonAcceleratorForeground] = TuiEgaPalette.EgaRed,
         [TuiColorRole.ButtonFocusBackground] = TuiEgaPalette.EgaWhite,
         [TuiColorRole.ButtonFocusForeground] = TuiEgaPalette.EgaBlack,
         [TuiColorRole.ButtonFocusAcceleratorForeground] = TuiEgaPalette.EgaRed,
         [TuiColorRole.ButtonShadow] = TuiEgaPalette.EgaBlack,
+        [TuiColorRole.ButtonDisabledBackground] = s_gray,
+        [TuiColorRole.ButtonDisabledForeground] = s_lightGray,
+        [TuiColorRole.ButtonDisabledAcceleratorForeground] = s_lightGray,
 
         // ── CheckBox / RadioButton ────────────────────────────────────────────
         [TuiColorRole.CheckBackground] = TuiEgaPalette.EgaBrightBlue,

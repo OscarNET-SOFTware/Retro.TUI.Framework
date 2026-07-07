@@ -192,11 +192,7 @@ public sealed class TuiRenderContext : IDisposable
     /// <param name="height">Height in grid rows.</param>
     /// <param name="bg">The background color role to apply.</param>
     public void FillRect(int col, int row, int width, int height, TuiColorRole bg)
-    {
-        RequireCanvas();
-        _fillPaint.Color = ResolveColor(bg);
-        DrawPixelRect(col, row, width, height);
-    }
+        => FillRect(col, row, width, height, ResolveColor(bg));
 
     /// <summary>
     /// Fills a rectangular region with an explicit <see cref="SKColor"/>.
@@ -228,17 +224,32 @@ public sealed class TuiRenderContext : IDisposable
     /// <param name="fg">Foreground (glyph) color role.</param>
     /// <param name="bg">Background (cell fill) color role.</param>
     public void DrawText(int col, int row, string text, TuiColorRole fg, TuiColorRole bg)
+        => DrawText(col, row, text, ResolveColor(fg), ResolveColor(bg));
+
+    /// <summary>
+    /// Draws a string starting at the given cell, with explicit foreground and
+    /// background colors.
+    /// </summary>
+    /// <param name="col">Left edge in grid columns.</param>
+    /// <param name="row">Row in grid rows.</param>
+    /// <param name="text">The string to draw. Must not be <see langword="null"/>.</param>
+    /// <param name="fg">Explicit foreground (glyph) color.</param>
+    /// <param name="bg">Explicit background (cell fill) color.</param>
+    /// <remarks>
+    /// Use this overload sparingly — prefer role-based colors for theme compatibility.
+    /// </remarks>
+    public void DrawText(int col, int row, string text, SKColor fg, SKColor bg)
     {
         RequireCanvas();
         ArgumentNullException.ThrowIfNull(text);
 
         // Fill background for the exact character run width.
         int runWidth = Math.Min(text.Length, Grid.Columns - col);
-        _fillPaint.Color = ResolveColor(bg);
+        _fillPaint.Color = bg;
         DrawPixelRect(col, row, runWidth, 1);
 
         // Draw glyphs.
-        _textPaint.Color = ResolveColor(fg);
+        _textPaint.Color = fg;
         _canvas!.DrawText(text, Grid.PixelX(col), Grid.BaselineY(row),
                           Font.SkFont, _textPaint);
     }
@@ -275,6 +286,23 @@ public sealed class TuiRenderContext : IDisposable
     /// <param name="bg">Background color role.</param>
     public void DrawTextClipped(int col, int row, int maxWidth, string text,
                                 TuiColorRole fg, TuiColorRole bg)
+        => DrawTextClipped(col, row, maxWidth, text, ResolveColor(fg), ResolveColor(bg));
+
+    /// <summary>
+    /// Draws a string clipped to a maximum width, truncating with an ellipsis
+    /// character if the text is longer than <paramref name="maxWidth"/>.
+    /// </summary>
+    /// <param name="col">Left edge in grid columns.</param>
+    /// <param name="row">Row in grid rows.</param>
+    /// <param name="maxWidth">Maximum number of character cells to use.</param>
+    /// <param name="text">The string to draw. Must not be <see langword="null"/>.</param>
+    /// <param name="fg">Explicit foreground color.</param>
+    /// <param name="bg">Explicit background color.</param>
+    /// <remarks>
+    /// Use this overload sparingly — prefer role-based colors for theme compatibility.
+    /// </remarks>
+    public void DrawTextClipped(int col, int row, int maxWidth, string text,
+                                SKColor fg, SKColor bg)
     {
         ArgumentNullException.ThrowIfNull(text);
 
@@ -429,8 +457,8 @@ public sealed class TuiRenderContext : IDisposable
         float ph = height * Grid.CellHeight;
 
         // Shadow offsets are in pixels (not grid cells).
-        float ox = TuiTheme.ShadowOffsetX;
-        float oy = TuiTheme.ShadowOffsetY;
+        float ox = TuiTheme.ShadowOffsetX * Grid.CellWidth;
+        float oy = TuiTheme.ShadowOffsetY * ((Grid.CellHeight / 2) - 1);
 
         _fillPaint.Color = shadowColor;
 

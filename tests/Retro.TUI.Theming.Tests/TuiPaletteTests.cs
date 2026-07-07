@@ -111,4 +111,41 @@ public sealed class TuiPaletteTests
         Assert.Equal(g, actual.Green);
         Assert.Equal(b, actual.Blue);
     }
+
+    // ── TuiEgaColor resolution ────────────────────────────────────────────────
+
+    [Theory]
+    [InlineData(TuiEgaColor.Black, 0x00, 0x00, 0x00)]
+    [InlineData(TuiEgaColor.Blue, 0x00, 0x00, 0xAA)]
+    [InlineData(TuiEgaColor.Green, 0x00, 0xAA, 0x00)]
+    [InlineData(TuiEgaColor.Cyan, 0x00, 0xAA, 0xAA)]
+    [InlineData(TuiEgaColor.Red, 0xAA, 0x00, 0x00)]
+    [InlineData(TuiEgaColor.Magenta, 0xAA, 0x00, 0xAA)]
+    [InlineData(TuiEgaColor.Brown, 0xAA, 0x55, 0x00)]
+    [InlineData(TuiEgaColor.LightGray, 0xAA, 0xAA, 0xAA)]
+    [InlineData(TuiEgaColor.DarkGray, 0x55, 0x55, 0x55)]
+    [InlineData(TuiEgaColor.BrightBlue, 0x55, 0x55, 0xFF)]
+    [InlineData(TuiEgaColor.BrightGreen, 0x55, 0xFF, 0x55)]
+    [InlineData(TuiEgaColor.BrightCyan, 0x55, 0xFF, 0xFF)]
+    [InlineData(TuiEgaColor.BrightRed, 0xFF, 0x55, 0x55)]
+    [InlineData(TuiEgaColor.BrightMagenta, 0xFF, 0x55, 0xFF)]
+    [InlineData(TuiEgaColor.Yellow, 0xFF, 0xFF, 0x55)]
+    [InlineData(TuiEgaColor.White, 0xFF, 0xFF, 0xFF)]
+    public void Resolve_EgaColor_ReturnsCorrectSkColor(
+        TuiEgaColor color, byte r, byte g, byte b)
+    {
+        SKColor actual = TuiPalette.Resolve(color);
+
+        Assert.Equal(r, actual.Red);
+        Assert.Equal(g, actual.Green);
+        Assert.Equal(b, actual.Blue);
+    }
+
+    [Fact]
+    public void Resolve_EgaColor_UndefinedValue_ThrowsArgumentOutOfRangeException()
+    {
+        var invalid = (TuiEgaColor)99;
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => TuiPalette.Resolve(invalid));
+    }
 }

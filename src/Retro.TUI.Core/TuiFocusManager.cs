@@ -25,19 +25,14 @@ namespace Retro.TUI.Core;
 /// <see cref="TuiFocusManager.Clear"/>, <see cref="FocusedView"/> is
 /// <see langword="null"/>.
 /// </remarks>
-public sealed class TuiFocusChangedEventArgs : EventArgs
+/// <remarks>
+/// Initializes a new instance with the given focused view.
+/// </remarks>
+/// <param name="focusedView">The newly focused view, or <see langword="null"/> when focus is cleared.</param>
+public sealed class TuiFocusChangedEventArgs(TuiView? focusedView) : EventArgs
 {
-    /// <summary>
-    /// Initializes a new instance with the given focused view.
-    /// </summary>
-    /// <param name="focusedView">The newly focused view, or <see langword="null"/> when focus is cleared.</param>
-    public TuiFocusChangedEventArgs(TuiView? focusedView)
-    {
-        FocusedView = focusedView;
-    }
-
     /// <summary>Gets the view that now holds keyboard focus, or <see langword="null"/> when cleared.</summary>
-    public TuiView? FocusedView { get; }
+    public TuiView? FocusedView { get; } = focusedView;
 }
 
 /// <summary>
@@ -61,7 +56,9 @@ public sealed class TuiFocusManager
     // ── State ─────────────────────────────────────────────────────────────────
 
     private readonly List<TuiView> _tabOrder = [];
+#pragma warning disable IDE0032
     private TuiView? _current;
+#pragma warning restore IDE0032
 
     // ── Events ────────────────────────────────────────────────────────────────
 
@@ -159,43 +156,84 @@ public sealed class TuiFocusManager
     }
 
     /// <summary>
-    /// Moves focus to the next view in tab order, wrapping around to the first
-    /// if the currently focused view is the last one.
+    /// Attempts to move keyboard focus to <paramref name="view"/>.
     /// </summary>
+    /// <param name="view">The view to focus. Must not be <see langword="null"/>.</param>
+    /// <returns>
+    /// <see langword="true"/> if focus was transferred to <paramref name="view"/>;
+    /// <see langword="false"/> if the view is not registered with this manager.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="view"/> is <see langword="null"/>.
+    /// </exception>
+    public bool TrySetFocus(TuiView view)
+    {
+        ArgumentNullException.ThrowIfNull(view);
+
+        if (!_tabOrder.Contains(view))
+            return false;
+
+        SetCurrentInternal(view);
+        return true;
+    }
+
+    /// <inheritdoc cref="FocusNext"/>
     /// <remarks>
-    /// If no view is registered, this method is a no-op.
-    /// If no view currently has focus, the first registered view receives it.
+    /// Disabled views are skipped: the next enabled view in tab order receives
+    /// focus. If all registered views are disabled, focus is not changed.
     /// </remarks>
     public void FocusNext()
     {
         if (_tabOrder.Count == 0)
             return;
 
-        int next = _current is null
+        int start = _current is null
             ? 0
             : (_tabOrder.IndexOf(_current) + 1) % _tabOrder.Count;
 
-        SetCurrentInternal(_tabOrder[next]);
+        int next = FindEnabledFrom(start, forward: true);
+        if (next >= 0)
+            SetCurrentInternal(_tabOrder[next]);
     }
 
-    /// <summary>
-    /// Moves focus to the previous view in tab order, wrapping around to the last
-    /// if the currently focused view is the first one.
-    /// </summary>
+    /// <inheritdoc cref="FocusPrevious"/>
     /// <remarks>
-    /// If no view is registered, this method is a no-op.
-    /// If no view currently has focus, the last registered view receives it.
+    /// Disabled views are skipped: the previous enabled view in tab order
+    /// receives focus. If all registered views are disabled, focus is not
+    /// changed.
     /// </remarks>
     public void FocusPrevious()
     {
         if (_tabOrder.Count == 0)
             return;
 
-        int prev = _current is null
+        int start = _current is null
             ? _tabOrder.Count - 1
             : (_tabOrder.IndexOf(_current) - 1 + _tabOrder.Count) % _tabOrder.Count;
 
-        SetCurrentInternal(_tabOrder[prev]);
+        int prev = FindEnabledFrom(start, forward: false);
+        if (prev >= 0)
+            SetCurrentInternal(_tabOrder[prev]);
+    }
+
+    /// <summary>
+    /// Searches the tab order starting at <paramref name="start"/>, wrapping
+    /// around, and returns the index of the first enabled view found.
+    /// Returns <c>-1</c> if all registered views are disabled.
+    /// </summary>
+    private int FindEnabledFrom(int start, bool forward)
+    {
+        int count = _tabOrder.Count;
+        for (int i = 0; i < count; i++)
+        {
+            int idx = forward
+                ? (start + i) % count
+                : (start - i + count) % count;
+
+            if (_tabOrder[idx].Enabled)
+                return idx;
+        }
+        return -1;
     }
 
     /// <summary>
@@ -206,6 +244,23 @@ public sealed class TuiFocusManager
     /// <see langword="true"/> if <paramref name="view"/> is the current focused view.
     /// </returns>
     public bool IsFocused(TuiView view) => ReferenceEquals(_current, view);
+
+    /// <summary>
+    /// Returns whether <paramref name="view"/> is registered with this manager.
+    /// </summary>
+    /// <param name="view">The view to test. Must not be <see langword="null"/>.</param>
+    /// <returns>
+    /// <see langword="true"/> if <paramref name="view"/> has been added via
+    /// <see cref="Register"/> and not yet removed via <see cref="Unregister"/>.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="view"/> is <see langword="null"/>.
+    /// </exception>
+    public bool IsRegistered(TuiView view)
+    {
+        ArgumentNullException.ThrowIfNull(view);
+        return _tabOrder.Contains(view);
+    }
 
     /// <summary>
     /// Clears all focus state, leaving no view focused.

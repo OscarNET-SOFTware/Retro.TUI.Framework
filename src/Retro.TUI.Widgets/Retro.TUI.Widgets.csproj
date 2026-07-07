@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AssemblyTitle>Widgets layer for Retro.TUI.Framework. Provides concrete UI controls — TuiLabel, TuiButton, TuiInputLine, TuiStatusBar, TuiMenuBar and friends — built on top of TuiView/TuiGroup. Depends only on Retro.TUI.Windows; not referenced by Retro.TUI.Core.</AssemblyTitle>
+    <Description>$(AssemblyTitle)</Description>
+    <PackageId>Retro.TUI.Widgets</PackageId>
+    <PackageTags>$(PackageTags);widgets;controls;label;button;input</PackageTags>
+    <Title>Retro TUI Widgets (part of Retro TUI Framework)</Title>
+  </PropertyGroup>
+
+<ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>Retro.TUI.Widgets.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Retro.TUI.Windows\Retro.TUI.Windows.csproj" />
+  </ItemGroup>
+
+</Project>

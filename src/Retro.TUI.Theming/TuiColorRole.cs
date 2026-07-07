@@ -249,6 +249,15 @@ public enum TuiColorRole
     /// </summary>
     ButtonShadow,
 
+    /// <summary>Background fill for a disabled (non-interactive) button.</summary>
+    ButtonDisabledBackground,
+
+    /// <summary>Text color for a disabled button.</summary>
+    ButtonDisabledForeground,
+
+    /// <summary>Accelerator character color for a disabled button.</summary>
+    ButtonDisabledAcceleratorForeground,
+
     // ── CheckBox / RadioButton ────────────────────────────────────────────
 
     /// <summary>Background of a check box or radio button control.</summary>

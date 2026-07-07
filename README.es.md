@@ -7,13 +7,13 @@
 [![.NET](https://img.shields.io/badge/.NET-10.0-purple.svg)](https://dotnet.microsoft.com/download/dotnet/10.0)
 [![Plataforma](https://img.shields.io/badge/Plataforma-Windows%20%7C%20Linux%20%7C%20macOS-blue.svg)]()
 [![Compilación](https://img.shields.io/github/actions/workflow/status/OscarNET-SOFTware/Retro.TUI.Framework/ci.yml?branch=develop&label=Compilación)](https://github.com/OscarNET-SOFTware/Retro.TUI.Framework/actions)
-[![Cobertura](https://img.shields.io/badge/Cobertura-65%25-yellow)](https://github.com/OscarNET-SOFTware/Retro.TUI.Framework)
+[![Cobertura](https://img.shields.io/badge/Cobertura-66%25-yellow)](https://github.com/OscarNET-SOFTware/Retro.TUI.Framework)
 [![NuGet](https://img.shields.io/nuget/v/Retro.TUI.Core?label=NuGet&color=blue)](https://www.nuget.org/packages/Retro.TUI.Core)
 [![Descargas](https://img.shields.io/nuget/dt/Retro.TUI.Core?label=Descargas)](https://www.nuget.org/packages/Retro.TUI.Core)
 
 > 📖 [English version](README.md)
 
-![Aplicación de ejemplo (vista previa)](docs/Retro.TUI.Framework-SampleApp-Preview.png)
+![Aplicación de ejemplo (vista previa)](https://raw.githubusercontent.com/OscarNET-SOFTware/Retro.TUI.Framework/develop/docs/Retro.TUI.Framework-SampleApp-Preview.png)
 
 ---
 
@@ -188,6 +188,7 @@ Retro.TUI.Framework.sln
     ├── Retro.TUI.Rendering.Tests/
     ├── Retro.TUI.Theming.Tests/
     ├── Retro.TUI.Views.Tests/
+    ├── Retro.TUI.Widgets.Tests/
     └── Retro.TUI.Windows.Tests/
 ```
 
@@ -289,8 +290,9 @@ Para obtener información técnica completa sobre cada capa, consulta:
 
 - [ ] `TuiMenuBar` con apertura de menú y desplazamiento del cursor
 - [ ] `TuiStatusBar` con teclas de función
-- [ ] `TuiButton` / `TuiCommand`
-- [ ] `TuiLabel`
+- [x] ✅ `TuiButton` — foco, activación por teclado/ratón/atajo, estado deshabilitado,
+  preajustes de fábrica (`Ok`, `Cancel`, `Yes`, `No`, `Abort`, `Retry`, `Ignore`)
+- [x] ✅ `TuiLabel`
 - [ ] `TuiInputLine` con cursor parpadeante y edición básica
 
 ### Milestone 5 — Controles avanzados

@@ -228,19 +228,14 @@ public class TuiGroup : TuiView
 
     // ── Event handling ────────────────────────────────────────────────────────
 
-    /// <summary>
-    /// Dispatches the event to visible, enabled children in reverse z-order
-    /// (frontmost child first) until one consumes it.
-    /// </summary>
-    /// <param name="ev">The event to dispatch.</param>
-    /// <returns>
-    /// <see langword="true"/> if a child consumed the event;
-    /// <see langword="false"/> if no child handled it.
-    /// </returns>
+    /// <inheritdoc/>
     /// <remarks>
-    /// The group itself does not consume any events — it only acts as a
-    /// dispatcher. Subclasses may override this method to intercept events
-    /// before or after child dispatch.
+    /// Dispatches the event to children in reverse z-order (front-to-back).
+    /// If no child consumes a <see cref="TuiCommandEvent"/>, it is forwarded
+    /// to <see cref="TuiView.Parent"/> so commands emitted from deep in the
+    /// tree (e.g. a <c>TuiButton</c> inside a <c>TuiWindow</c>) bubble up to
+    /// <see cref="TuiDesktop.CommandSink"/> and reach
+    /// <c>TuiApplication.OnCommand</c>.
     /// </remarks>
     public override bool HandleEvent(TuiEvent ev)
     {
@@ -259,5 +254,35 @@ public class TuiGroup : TuiView
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// Recursively collects all focusable descendants of this group into
+    /// <paramref name="result"/>, in depth-first, paint order.
+    /// </summary>
+    /// <param name="result">
+    /// The collection that receives each focusable <see cref="TuiView"/> found.
+    /// Must not be <see langword="null"/>.
+    /// </param>
+    /// <remarks>
+    /// Used by <c>TuiApplication</c> (Core layer) to auto-register focusable
+    /// views with <c>TuiFocusManager</c> after <c>OnInitialize</c> and before
+    /// each modal loop, without exposing <see cref="TuiView.Children"/> publicly.
+    /// Only views with <see cref="TuiView.Focusable"/> set to
+    /// <see langword="true"/> are included; non-focusable groups are still
+    /// traversed so their focusable descendants are found.
+    /// </remarks>
+    internal void CollectFocusable(ICollection<TuiView> result)
+    {
+        ArgumentNullException.ThrowIfNull(result);
+
+        foreach (TuiView child in Children)
+        {
+            if (child.Focusable)
+                result.Add(child);
+
+            if (child is TuiGroup subGroup)
+                subGroup.CollectFocusable(result);
+        }
     }
 }

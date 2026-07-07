@@ -86,6 +86,17 @@ public enum TuiCommand
     /// <summary>Switches focus to the previous window in Z-order.</summary>
     PrevWindow = 14,
 
+    // ── Dialog commands (framework-reserved: 20–29) ──────────────────────
+
+    /// <summary>Aborts the current operation without retry.</summary>
+    Abort = 20,
+
+    /// <summary>Retries the failed operation.</summary>
+    Retry = 21,
+
+    /// <summary>Ignores the error and continues.</summary>
+    Ignore = 22,
+
     // ── Application range (values 100 and above) ──────────────────────────
 
     /// <summary>

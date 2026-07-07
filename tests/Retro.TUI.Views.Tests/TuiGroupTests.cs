@@ -47,6 +47,12 @@ public sealed class TuiGroupTests
         }
     }
 
+    private sealed class StubFocusableView : TuiView
+    {
+        public StubFocusableView() => Focusable = true;
+        public override void Draw(TuiRenderContext ctx) { }
+    }
+
     // ── Add / Remove ──────────────────────────────────────────────────────────
 
     [Fact]
@@ -437,5 +443,88 @@ public sealed class TuiGroupTests
         group.Remove(second);
 
         Assert.Same(first, group.Frontmost);
+    }
+
+    // ── CollectFocusable ─────────────────────────────────────────────────────────
+
+    [Fact]
+    public void CollectFocusable_EmptyGroup_ReturnsEmpty()
+    {
+        var group = new TuiGroup();
+        var result = new List<TuiView>();
+
+        group.CollectFocusable(result);
+
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public void CollectFocusable_FlatChildren_ReturnsFocusableOnly()
+    {
+        var group = new TuiGroup();
+        var focusA = new StubFocusableView();
+        var focusB = new StubFocusableView();
+        var nonFocus = new StubView();
+
+        group.Add(focusA);
+        group.Add(nonFocus);
+        group.Add(focusB);
+
+        var result = new List<TuiView>();
+        group.CollectFocusable(result);
+
+        Assert.Equal(2, result.Count);
+        Assert.Contains(focusA, result);
+        Assert.Contains(focusB, result);
+        Assert.DoesNotContain(nonFocus, result);
+    }
+
+    [Fact]
+    public void CollectFocusable_NestedGroups_FindsDescendants()
+    {
+        var root = new TuiGroup();
+        var child = new TuiGroup();
+        var nested = new StubFocusableView();
+
+        root.Add(child);
+        child.Add(nested);
+
+        var result = new List<TuiView>();
+        root.CollectFocusable(result);
+
+        Assert.Single(result);
+        Assert.Contains(nested, result);
+    }
+
+    [Fact]
+    public void CollectFocusable_NullResult_ThrowsArgumentNullException()
+    {
+        var group = new TuiGroup();
+
+        Assert.Throws<ArgumentNullException>(
+            () => group.CollectFocusable(null!));
+    }
+
+    [Fact]
+    public void CollectFocusable_PreservesDepthFirstOrder()
+    {
+        var root = new TuiGroup();
+        var childA = new TuiGroup();
+        var childB = new TuiGroup();
+        var v1 = new StubFocusableView();
+        var v2 = new StubFocusableView();
+        var v3 = new StubFocusableView();
+
+        // Layout: root → [childA → [v1, v2], childB → [v3]]
+        childA.Add(v1);
+        childA.Add(v2);
+        childB.Add(v3);
+        root.Add(childA);
+        root.Add(childB);
+
+        var result = new List<TuiView>();
+        root.CollectFocusable(result);
+
+        Assert.Equal(new[] { v1, v2, v3 }, result);
     }
 }
