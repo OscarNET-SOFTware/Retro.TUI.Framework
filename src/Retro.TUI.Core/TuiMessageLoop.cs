@@ -463,6 +463,18 @@ internal sealed class TuiMessageLoop
                 continue;
             }
 
+            // Auto-focus on click: transfer focus to the hit view before delivering
+            // the event when it is focusable and a focus manager is wired.
+            // This mirrors Turbo Vision's TGroup selecting the clicked subview —
+            // here the responsibility lives in the message loop (Core) so that
+            // widgets (Widgets layer) never need to reference TuiFocusManager directly.
+            if (resolvedEvent.Action == TuiMouseAction.ButtonDown
+                && current.Focusable
+                && _wiredFocusManager is not null)
+            {
+                _wiredFocusManager.TrySetFocus(current);
+            }
+
             if (current.HandleEvent(resolvedEvent))
             {
                 // On ButtonDown, establish capture on the first ancestor with

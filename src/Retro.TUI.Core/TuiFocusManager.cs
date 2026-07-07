@@ -25,19 +25,14 @@ namespace Retro.TUI.Core;
 /// <see cref="TuiFocusManager.Clear"/>, <see cref="FocusedView"/> is
 /// <see langword="null"/>.
 /// </remarks>
-public sealed class TuiFocusChangedEventArgs : EventArgs
+/// <remarks>
+/// Initializes a new instance with the given focused view.
+/// </remarks>
+/// <param name="focusedView">The newly focused view, or <see langword="null"/> when focus is cleared.</param>
+public sealed class TuiFocusChangedEventArgs(TuiView? focusedView) : EventArgs
 {
-    /// <summary>
-    /// Initializes a new instance with the given focused view.
-    /// </summary>
-    /// <param name="focusedView">The newly focused view, or <see langword="null"/> when focus is cleared.</param>
-    public TuiFocusChangedEventArgs(TuiView? focusedView)
-    {
-        FocusedView = focusedView;
-    }
-
     /// <summary>Gets the view that now holds keyboard focus, or <see langword="null"/> when cleared.</summary>
-    public TuiView? FocusedView { get; }
+    public TuiView? FocusedView { get; } = focusedView;
 }
 
 /// <summary>
@@ -61,7 +56,9 @@ public sealed class TuiFocusManager
     // ── State ─────────────────────────────────────────────────────────────────
 
     private readonly List<TuiView> _tabOrder = [];
+#pragma warning disable IDE0032
     private TuiView? _current;
+#pragma warning restore IDE0032
 
     // ── Events ────────────────────────────────────────────────────────────────
 
@@ -156,6 +153,28 @@ public sealed class TuiFocusManager
                 nameof(view));
 
         SetCurrentInternal(view);
+    }
+
+    /// <summary>
+    /// Attempts to move keyboard focus to <paramref name="view"/>.
+    /// </summary>
+    /// <param name="view">The view to focus. Must not be <see langword="null"/>.</param>
+    /// <returns>
+    /// <see langword="true"/> if focus was transferred to <paramref name="view"/>;
+    /// <see langword="false"/> if the view is not registered with this manager.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="view"/> is <see langword="null"/>.
+    /// </exception>
+    public bool TrySetFocus(TuiView view)
+    {
+        ArgumentNullException.ThrowIfNull(view);
+
+        if (!_tabOrder.Contains(view))
+            return false;
+
+        SetCurrentInternal(view);
+        return true;
     }
 
     /// <summary>
