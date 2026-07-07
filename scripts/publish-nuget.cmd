@@ -151,7 +151,7 @@ set PROJECTS=^
     src\Retro.TUI.Views\Retro.TUI.Views.csproj ^
     src\Retro.TUI.Core\Retro.TUI.Core.csproj ^
     src\Retro.TUI.Windows\Retro.TUI.Windows.csproj ^
-    themes\Retro.TUI.Theme.PcTools9\Retro.TUI.Theme.PcTools9.csproj
+    src\Retro.TUI.Widgets\Retro.TUI.Widgets.csproj
 
 :: ----------------------------------------------------------------------------
 :: Step 2 - Pack
